@@ -1,0 +1,29 @@
+schema: spec-driven
+
+strict_tdd: false
+
+testing:
+  runner: pytest
+
+context: |
+  Tech stack: Python bootstrap baseline only.
+  Architecture: minimal src-layout package scaffold without runtime services.
+  Testing: Standard Mode, strict TDD disabled, verify contract defined for pytest/ruff/mypy.
+
+rules:
+  apply:
+    instructions:
+      - Read all relevant accepted artifacts before writing.
+      - Keep the implementation minimal and directly tied to the accepted bootstrap scope.
+      - Do not introduce FastAPI, Celery, CI, hooks, Docker, Makefile, lockfiles, or AGENTS.md in this change.
+    tdd: false
+    test_command: ".venv/bin/python -m pytest"
+  verify:
+    test_command: ".venv/bin/python -m pytest"
+    build_command: ""
+    coverage_threshold: 0
+
+verify:
+  - .venv/bin/python -m ruff check .
+  - .venv/bin/python -m mypy src
+  - .venv/bin/python -m pytest

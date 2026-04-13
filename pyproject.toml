@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobmatchrag"
+version = "0.1.0"
+description = "Minimal tooling bootstrap for JobMatchRAG."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+pythonpath = ["src"]
+
+[tool.ruff]
+src = ["src"]
+
+[tool.mypy]
+files = ["src/jobmatchrag"]
+python_version = "3.11"
+explicit_package_bases = true
+
+[tool.setuptools.packages.find]
+where = ["src"]

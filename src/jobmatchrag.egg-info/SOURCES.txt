@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/jobmatchrag/__init__.py
+src/jobmatchrag.egg-info/PKG-INFO
+src/jobmatchrag.egg-info/SOURCES.txt
+src/jobmatchrag.egg-info/dependency_links.txt
+src/jobmatchrag.egg-info/requires.txt
+src/jobmatchrag.egg-info/top_level.txt
+tests/test_smoke.py
