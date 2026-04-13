@@ -13,6 +13,10 @@ venv/
 .mypy_cache/
 .ruff_cache/
 .coverage*
+*.egg-info/
+.eggs/
+build/
+dist/
 
 # OS
 .DS_Store
