@@ -129,6 +129,23 @@ class IngestionOrchestrator:
                 run.complete(RunStatus.PARTIAL, "bounded run scope reached")
                 return OrchestrationResult(run=run, raw_handoff=tuple(raw_handoff))
 
+            if outcome.error_summary is not None:
+                run.error_summary = outcome.error_summary
+                if outcome.error_summary.retryable and run.retry_count < self._resolve_max_retries(job):
+                    run.retry_count += 1
+                    run.retry_history.append(
+                        RetryRecord(
+                            attempt=run.retry_count,
+                            classification=outcome.error_summary,
+                            observed_at=datetime.now(UTC),
+                        )
+                    )
+                    continue
+
+                reason = "retry budget exhausted" if outcome.error_summary.retryable else "terminal adapter error"
+                run.complete(RunStatus.PARTIAL if raw_handoff else RunStatus.FAILED, reason)
+                return OrchestrationResult(run=run, raw_handoff=tuple(raw_handoff))
+
             if outcome.rate_limit_observations and not exhausted:
                 run.complete(RunStatus.PARTIAL if raw_handoff else RunStatus.FAILED, "rate limit constrained execution")
                 return OrchestrationResult(run=run, raw_handoff=tuple(raw_handoff))

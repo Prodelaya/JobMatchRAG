@@ -1,0 +1,8 @@
+change: first-source-infojobs
+status: closed
+phase: archive
+artifact_store: hybrid
+archived_on: 2026-04-14
+verify_verdict: pass-after-doc-followup
+notable_tradeoff: Detail enrichment remains new-offer-only; known offers are not routinely re-enriched in this vertical.
+next_recommended: offer-normalization-canonicalization

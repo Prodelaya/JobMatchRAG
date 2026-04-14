@@ -33,10 +33,10 @@ Documentación complementaria revisada:
 
 Para el vertical de ingesta de ofertas, la parte útil hoy es la API pública de búsqueda de empleo:
 
-- `GET /offer` — listado de ofertas por criterios de búsqueda;
-- `GET /offer/{offerId}` — detalle completo de una oferta;
-- `GET /dictionary/{dictionaryId}` — diccionarios para filtros y valores normalizados;
-- `GET /dictionary/type/{typeId}` — diccionarios especiales como skills.
+- `GET /offer` — listado de ofertas por criterios de búsqueda; IMPLEMENTADO en V1.
+- `GET /offer/{offerId}` — detalle completo de una oferta; IMPLEMENTADO en V1 solo para ofertas nuevas.
+- `GET /dictionary/{dictionaryId}` — referencia útil para filtros y valores normalizados futuros; NO implementado en el adapter V1.
+- `GET /dictionary/type/{typeId}` — referencia útil para diccionarios especiales como skills; NO implementado en el adapter V1.
 
 ### 2.2 No prioritarias para este proyecto hoy
 
@@ -118,8 +118,16 @@ Es el endpoint principal para:
 
 - descubrimiento de ofertas;
 - capturas paginadas;
-- barridos por ventana temporal;
+- filtros temporales provider-side explícitos como `sinceDate` cuando operación los pide en `provider_filters`;
 - uso de filtros source-side como optimización.
+
+En la implementación vigente de `first-source-infojobs`:
+
+- cada `fetch()` del adapter procesa **una página de `GET /offer`**;
+- `maxResults` se fija en **50** como ceiling operativo inicial;
+- el request efectivo (`page`, `maxResults`, filtros soportados y `sinceDate` si existe) se preserva en la traza raw del run;
+- la continuidad real del run sigue un checkpoint interno del framework/adapter y **NO** convierte `sinceDate` en checkpoint canónico;
+- ese checkpoint es **best-effort**: usa página + posición + `next_offer_id` como ancla para reanudar dentro del listado actual, pero InfoJobs no ofrece garantía fuerte contra reordenamientos/mutaciones entre llamadas.
 
 ### Seguridad
 
@@ -167,7 +175,7 @@ Es el endpoint principal para:
 - `subcategory` pisa a `category` si ambos aparecen.
 - `province` pisa a `country`.
 - `facets=true` puede ser útil para exploración y debugging, pero probablemente no para la captura estándar.
-- `sinceDate` es relativo al “hoy” de InfoJobs; sirve como optimización de ventana, no como checkpoint canónico del sistema.
+- `sinceDate` es relativo al “hoy” de InfoJobs; sirve como optimización temporal provider-side, no como checkpoint canónico del sistema ni como traducción automática de `window_start/window_end`.
 
 ### Campos relevantes de respuesta
 
@@ -249,7 +257,7 @@ Entre otros:
 
 ### Uso en el proyecto
 
-Es el endpoint para enriquecer la oferta capturada en listado con detalle completo. Para JobMatchRAG debería considerarse la fuente principal del raw snapshot rico.
+Es el endpoint para enriquecer la oferta capturada en listado con detalle completo. En `first-source-infojobs` se usa **solo para ofertas nuevas** detectadas por JobMatchRAG; si una oferta ya era conocida y reaparece en listados posteriores, no se hace re-enrichment regular en este vertical.
 
 ### Seguridad
 
@@ -344,6 +352,14 @@ Es el endpoint para enriquecer la oferta capturada en listado con detalle comple
 
 - `313` — `offerId` inválido.
 
+### Observaciones operativas para el adapter
+
+- el raw de `GET /offer/{offerId}` se preserva como captura **hermana** de la captura de listado, no como reemplazo;
+- si una oferta nueva queda sin detalle por rate limit o presupuesto de requests, igualmente se preserva el raw de listing y la traza marca el detalle como `deferred` en vez de descartar la oferta;
+- si `GET /offer` o `GET /offer/{offerId}` devuelven `429`, el adapter registra una observación estructurada de rate limit (`Retry-After`, cuota restante si está disponible); el run solo cierra `partial` si ya había material usable en el handoff, y si no había nada todavía cierra `failed` con razón `rate limit constrained execution`;
+- errores de autenticación (`401`) se traducen como terminales de credenciales, salvo códigos provider-specific como `102` que se clasifican como configuración inválida;
+- payloads exitosos malformados o respuestas con schema imposible se tratan como `source_data` terminal, no como fallos transitorios de red.
+
 ---
 
 ## 4.3 `GET /dictionary/{dictionaryId}`
@@ -354,7 +370,7 @@ Es el endpoint para enriquecer la oferta capturada en listado con detalle comple
 
 ### Uso en el proyecto
 
-Es clave para:
+Es referencia útil para futuro trabajo de filtros/normalización, pero NO forma parte de los endpoints mínimos ni del adapter V1 implementado hoy. Sirve para:
 
 - traducir filtros humanos a keys/ids válidos de InfoJobs;
 - cachear valores maestros de provincia, categoría, teletrabajo, etc.;
@@ -419,7 +435,7 @@ Cada item trae:
 
 ### Uso en el proyecto
 
-Sirve sobre todo para `skills`, porque el detalle de oferta puede devolver `skillsList`.
+Sirve sobre todo como referencia futura para `skills`, porque el detalle de oferta puede devolver `skillsList`. No está integrado todavía en el adapter V1.
 
 ### Valores documentados
 
@@ -537,47 +553,48 @@ La propia doc recomienda **50 o menos** por request. Conviene respetarlo como ce
 
 Es útil para bajar volumen, pero es un filtro relativo. No debe reemplazar el checkpoint interno del framework (`checkpoint_in` / `checkpoint_out`).
 
+Además, en InfoJobs actual el checkpoint del adapter solo puede prometer continuidad **best-effort** sobre el orden observado del listado. Si el proveedor inserta, borra o reordena resultados entre fetches, el adapter puede reanudar con replay defensivo de página para evitar skips silenciosos, pero NO puede prometer continuidad determinista exacta sin una garantía de orden estable que la API no documenta. Si recibe un checkpoint inválido o ajeno al adapter, la ejecución debe fallar explícitamente en vez de resetearse silenciosamente a página 1.
+
 ---
 
 ## 8. Recomendación de uso dentro de JobMatchRAG
 
-### 8.1 Flujo sugerido para el futuro adapter InfoJobs
+### 8.1 Flujo sugerido para el adapter InfoJobs implementado
 
-1. resolver/cargar diccionarios necesarios;
-2. traducir filter intent interno a parámetros source-side permitidos;
-3. consultar `GET /offer` paginado con límites acotados;
-4. capturar raw de listado con query efectiva y metadata de paginación;
-5. decidir enriquecimiento por `offerId` usando `GET /offer/{offerId}`;
-6. persistir snapshots raw separados o componibles;
-7. entregar material a normalización sin perder:
+1. traducir filter intent interno a parámetros source-side permitidos;
+2. consultar `GET /offer` paginado con límites acotados;
+3. capturar raw de listado con query efectiva y metadata de paginación;
+4. decidir enriquecimiento por `offerId` usando `GET /offer/{offerId}` solo para ofertas nuevas;
+5. persistir snapshots raw separados o componibles;
+6. entregar material a normalización sin perder:
    - request params efectivos,
    - versioned endpoint usado,
-   - timestamps de captura,
+   - timestamps de captura por origen (`list` y, si existe, `detail`),
    - requestId si hubo error.
 
 ### 8.2 Endpoints mínimos para V1 del adapter
 
-Mínimo viable útil:
+Implementado hoy en `first-source-infojobs`:
 
 - `GET /offer`
 - `GET /offer/{offerId}`
+
+Referencia futura, fuera de V1:
+
 - `GET /dictionary/{dictionaryId}`
-
-Opcional de soporte:
-
 - `GET /dictionary/type/skills`
 
 ---
 
 ## 9. Resumen ejecutivo
 
-Si mañana alguien implementa `first-source-infojobs`, la parte de InfoJobs que realmente importa para JobMatchRAG es esta:
+Con `first-source-infojobs` ya implementado y archivado, la parte de InfoJobs que realmente importa para JobMatchRAG es esta:
 
 - **Auth:** Basic Auth de aplicación; OAuth2 no hace falta para ofertas públicas.
 - **Discovery/listing:** `GET /offer` con paginación, `sinceDate`, ubicación, categoría, teleworking y filtros laborales.
 - **Enrichment/detail:** `GET /offer/{offerId}` para descripción completa, empresa, salarios, ubicación, skills y estado.
-- **Normalization support:** diccionarios públicos para categorías, provincias, ciudades, contrato, teletrabajo, experiencia, estudios y salarios.
-- **Traceability:** preservar `requestId` en errores, query efectiva, versión del endpoint y diferencias entre listado vs detalle.
+- **Future normalization support:** diccionarios públicos para categorías, provincias, ciudades, contrato, teletrabajo, experiencia, estudios y salarios; referenciados pero NO implementados en V1.
+- **Traceability:** preservar `requestId` en errores, query efectiva, versión del endpoint, timestamps de captura por origen y diferencias entre listado vs detalle.
 - **Boundary rule:** InfoJobs ofrece filtros útiles, pero la autoridad canónica sigue siendo interna.
 
 ---

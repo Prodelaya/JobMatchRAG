@@ -213,6 +213,96 @@ def test_rate_limit_observation_can_close_partial_run() -> None:
     assert result.run.rate_limit_observations[0].retry_after_seconds == 60
 
 
+def test_partial_fetch_outcome_can_surface_terminal_error_summary() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "1"},),
+                next_checkpoint="cp-1",
+                exhausted=False,
+                error_summary=ErrorClassification(
+                    category=ErrorCategory.AUTHENTICATION,
+                    retryable=False,
+                    message="invalid credentials",
+                    details={"provider": "infojobs", "endpoint": "GET /offer/{offerId}"},
+                ),
+            )
+        ]
+    )
+    orchestrator = IngestionOrchestrator()
+
+    result = orchestrator.execute_job(build_job(), adapter)
+
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "terminal adapter error"
+    assert result.run.error_summary is not None
+    assert result.run.error_summary.category is ErrorCategory.AUTHENTICATION
+    assert result.run.error_summary.retryable is False
+    assert result.run.checkpoint_out == "cp-1"
+    assert result.raw_handoff == ({"id": "1"},)
+
+
+def test_retryable_error_summary_respects_retry_budget_and_keeps_progress() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "1"},),
+                next_checkpoint="cp-1",
+                exhausted=False,
+                error_summary=ErrorClassification(
+                    category=ErrorCategory.NETWORK,
+                    retryable=True,
+                    message="temporary detail failure",
+                ),
+            ),
+            FetchOutcome(raw_items=({"id": "2"},), next_checkpoint="cp-2", exhausted=True),
+        ]
+    )
+    orchestrator = IngestionOrchestrator(guardrails=IngestionGuardrails(max_retries=2, max_fetch_calls=3))
+
+    result = orchestrator.execute_job(build_job(checkpoint_in="cp-previous"), adapter)
+
+    assert result.run.status is RunStatus.COMPLETED
+    assert result.run.retry_count == 1
+    assert len(result.run.retry_history) == 1
+    assert result.run.retry_history[0].classification.retryable is True
+    assert result.run.error_summary is not None
+    assert result.run.error_summary.message == "temporary detail failure"
+    assert result.run.checkpoint_in == "cp-previous"
+    assert result.run.checkpoint_out == "cp-2"
+    assert result.raw_handoff == ({"id": "1"}, {"id": "2"})
+    assert [context.checkpoint for context in adapter.contexts] == ["cp-previous", "cp-1"]
+
+
+def test_retryable_error_summary_closes_run_when_retry_budget_is_exhausted() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "1"},),
+                next_checkpoint="cp-1",
+                exhausted=False,
+                error_summary=ErrorClassification(
+                    category=ErrorCategory.NETWORK,
+                    retryable=True,
+                    message="temporary detail failure",
+                ),
+            )
+        ]
+    )
+    orchestrator = IngestionOrchestrator(guardrails=IngestionGuardrails(max_retries=0))
+
+    result = orchestrator.execute_job(build_job(max_retries=0, checkpoint_in="cp-previous"), adapter)
+
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "retry budget exhausted"
+    assert result.run.retry_count == 0
+    assert result.run.error_summary is not None
+    assert result.run.error_summary.retryable is True
+    assert result.run.checkpoint_in == "cp-previous"
+    assert result.run.checkpoint_out == "cp-1"
+    assert result.raw_handoff == ({"id": "1"},)
+
+
 def test_repeated_job_execution_creates_distinct_runs() -> None:
     adapter = FakeAdapter(
         responses=[

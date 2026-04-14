@@ -5,9 +5,12 @@ from datetime import datetime
 from jobmatchrag.source_ingestion.contracts import (
     ErrorCategory,
     ErrorClassification,
+    KnownOfferIndex,
     PaginationSupport,
+    RawCaptureOrigin,
     RateLimitObservation,
     RateLimitSupport,
+    RawOfferHandoff,
     SourceCapabilities,
     TimeWindowSupport,
 )
@@ -58,3 +61,34 @@ def test_rate_limit_observation_keeps_structured_traceability() -> None:
     assert observation.retry_after_seconds == 30
     assert observation.remaining_quota == 0
     assert observation.notes == "provider asked for cooldown"
+
+
+def test_infojobs_adapter_seam_names_known_offer_lookup_and_raw_handoff_shape() -> None:
+    class StaticKnownOfferIndex:
+        def is_new(self, source_key: str, source_offer_id: str) -> bool:
+            return source_key == "infojobs" and source_offer_id == "offer-1"
+
+    known_offer_index: KnownOfferIndex = StaticKnownOfferIndex()
+    handoff: RawOfferHandoff = {
+        "source_key": "infojobs",
+        "source_offer_id": "offer-1",
+        "trace": {
+            "job_id": "job-1",
+            "run_id": "run-1",
+            "checkpoint_in": "opaque-checkpoint",
+            "list_request": {"page": 1, "maxResults": 50, "sinceDate": "_24_HOURS"},
+            "page_context": {"current_page": 1, "total_pages": 3},
+        },
+        "captures": {
+            RawCaptureOrigin.LIST: {
+                "origin": RawCaptureOrigin.LIST,
+                "endpoint": "GET /offer",
+                "api_version": "9",
+                "payload": {"id": "offer-1", "title": "Python Engineer"},
+            }
+        },
+    }
+
+    assert known_offer_index.is_new("infojobs", "offer-1") is True
+    assert handoff["captures"][RawCaptureOrigin.LIST]["origin"] is RawCaptureOrigin.LIST
+    assert handoff["captures"][RawCaptureOrigin.LIST]["payload"]["title"] == "Python Engineer"

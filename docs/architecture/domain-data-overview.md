@@ -34,6 +34,8 @@ Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job
 
 Cada captura queda como `RawOfferSnapshot`, preservando el material original para debugging, replay y comparación histórica.
 
+Para `first-source-infojobs`, una oferta descubierta siempre conserva el payload de listado y, cuando hubo enriquecimiento para oferta nueva, agrega además un payload de detalle separado. Si el detalle no pudo capturarse por rate limit o presupuesto operativo, la oferta igual sobrevive con su captura `list` y una marca explícita de `detail` diferido. La regla es CLARA: `list` y `detail` son orígenes hermanos con trazabilidad propia, no una fusión destructiva.
+
 ### 3.3 `normalized`
 
 El snapshot se transforma en `NormalizedOffer`, que ya expresa campos comunes como título, empresa, ubicación, modalidad, salario, descripción, URL y metadatos de captura, con calidad suficiente para comparar entre fuentes.
@@ -121,6 +123,8 @@ El record operativo debe preservar, como mínimo:
 - counters de fetch/items capturados;
 - retries intentados + clasificación final del error;
 - observaciones de rate limit y estado final.
+
+Cuando un source adapter produce múltiples capturas raw para la misma oferta en un mismo run, también debe sobrevivir la procedencia de cada payload (`list` vs `detail`) junto con el request efectivo de discovery que originó la evidencia.
 
 ## 9. Future `candidate_id` Boundary
 

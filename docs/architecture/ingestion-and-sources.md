@@ -72,7 +72,7 @@ Toda fuente futura debe respetar un contrato común equivalente a:
 SourceAdapter
 - source_key
 - capabilities: {pagination, time_windows, supported_filters, checkpoint_support, rate_limit_support}
-- fetch(run_context) -> FetchOutcome(raw_items, next_checkpoint, exhausted, rate_limit_observations)
+- fetch(run_context) -> FetchOutcome(raw_items, next_checkpoint, exhausted, rate_limit_observations, error_summary)
 - classify_error(error) -> ErrorClassification(category, retryable)
 ```
 
@@ -80,12 +80,21 @@ SourceAdapter
 
 - `fetch(run_context)` obtiene resultados bajo contexto explícito de run;
 - `capabilities` declara qué optimizaciones source-side existen sin volverlas autoridad canónica;
-- `checkpoint_support` y `next_checkpoint` describen continuidad incremental sin imponer schema físico de storage;
+- `checkpoint_support` y `next_checkpoint` describen continuidad incremental sin imponer schema físico de storage; si una fuente solo soporta continuidad best-effort por orden provider-side mutable, esa limitación debe quedar explícita en su contrato/documentación;
+- `error_summary` permite que el adapter devuelva material raw ya preservado y un error clasificado dentro del mismo `FetchOutcome`; si ese error es `retryable`, el framework debe seguir respetando presupuesto de retries sin descartar items ya forwardeados ni checkpoints ya avanzados;
 - `rate_limit_support` declara si la fuente expone señales explícitas de cuota o solo observación pasiva;
 - `classify_error(error)` traduce fallos de fuente a clases operables comunes;
 - el framework entrega payload raw y metadata operativa, pero NO implementa todavía la persistencia de `RawOfferSnapshot` dentro de este módulo compartido;
 - el adapter encapsula rarezas de la fuente, pero no redefine el dominio;
 - la salida debe poder seguir auditándose hasta el payload raw original y, cuando exista la etapa `raw`, hasta su `RawOfferSnapshot` persistido.
+
+### Concrete InfoJobs notes for the first source
+
+- `GET /offer` es la vía primaria de discovery;
+- `GET /offer/{offerId}` se usa solo para enriquecer ofertas nuevas para el sistema;
+- `sinceDate` y demás filtros source-side son optimizaciones declaradas por capabilities, no autoridad canónica de continuidad o elegibilidad; en InfoJobs actual eso vive en `provider_filters`, no en una traducción automática de `requested_window_start/end`;
+- el checkpoint que vuelve del adapter representa continuación interna de página/oferta y puede convivir con `checkpoint_in` opaco del framework sin reinterpretarlo, pero en InfoJobs la garantía real es solo best-effort porque el proveedor no documenta orden estable entre llamadas; el payload debe incluir marcador de adapter/version para rechazar checkpoints ajenos o incompatibles de forma explícita;
+- el handoff raw preserva capturas hermanas `list` y `detail` cuando existe detalle, y si el detalle de una oferta nueva queda bloqueado por presupuesto/rate limit igual preserva el `list` raw con marca explícita de `detail` diferido.
 
 ## 6. Job and run traceability model
 

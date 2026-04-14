@@ -36,7 +36,7 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | 2 | `project-tooling-bootstrap` | cerrado | `decision-foundation-pack` | Dejar bootstrap Python ejecutable con `.venv`, `pytest`, `ruff`, `mypy` y contrato verify reutilizable. |
 | 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]`, preserva el contrato `.venv/bin/python -m ...` y no agrega tooling nuevo ni capacidad funcional de ingesta. |
 | 4 | `source-ingestion-framework` | cerrado | `uv-bootstrap-alignment` | Definir e implementar el framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
-| 5 | `first-source-infojobs` | pendiente | `source-ingestion-framework` | Implementar la primera fuente real sobre InfoJobs API usando el framework común. |
+| 5 | `first-source-infojobs` | cerrado | `source-ingestion-framework` | Implementó la primera fuente real sobre InfoJobs API con adapter concreto, tests verdes, preservación raw `list/detail` y documentación viva alineada. |
 | 6 | `offer-normalization-canonicalization` | pendiente | `first-source-infojobs` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
 | 7 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar hard filters y scoring base explicable por reglas. |
 | 8 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
@@ -68,8 +68,8 @@ Si eso pasa, el cambio debe explicitar:
 
 ## 5. Próximo vertical recomendado
 
-Hoy, el siguiente change recomendado es:
+Hoy, el foco recomendado pasa a ser:
 
-**`first-source-infojobs`**
+**abrir `offer-normalization-canonicalization`**
 
-Razón: `source-ingestion-framework` ya quedó cerrado y dejó lista la base reusable adapter-agnostic de jobs, runs, errores, guardrails y trazabilidad. El siguiente paso natural es `first-source-infojobs`, que ya puede implementar la primera fuente real sobre ese framework sin reabrir foundations ni mezclar el contrato común con detalles de proveedor antes de tiempo.
+Razón: `first-source-infojobs` ya quedó cerrado y archivado con su spec principal sincronizada. El siguiente paso natural es transformar la evidencia cruda ya capturada en ofertas canónicas, deduplicadas y listas para scoring/publicación.
