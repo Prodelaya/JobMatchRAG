@@ -34,7 +34,7 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | --- | --- | --- | --- | --- |
 | 1 | `decision-foundation-pack` | cerrado | — | Cerrar foundations de producto, arquitectura, scoring, operaciones y documentación viva. |
 | 2 | `project-tooling-bootstrap` | cerrado | `decision-foundation-pack` | Dejar bootstrap Python ejecutable con `.venv`, `pytest`, `ruff`, `mypy` y contrato verify reutilizable. |
-| 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]` y preserva el contrato `.venv/bin/python -m ...`. |
+| 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]`, preserva el contrato `.venv/bin/python -m ...` y no agrega tooling nuevo ni capacidad funcional de ingesta. |
 | 4 | `source-ingestion-framework` | cerrado | `uv-bootstrap-alignment` | Definir e implementar el framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
 | 5 | `first-source-infojobs` | pendiente | `source-ingestion-framework` | Implementar la primera fuente real sobre InfoJobs API usando el framework común. |
 | 6 | `offer-normalization-canonicalization` | pendiente | `first-source-infojobs` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |

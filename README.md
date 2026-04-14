@@ -7,7 +7,7 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. Its V1 goal is
 - documentation foundation: closed
 - Python tooling bootstrap: closed
 - local bootstrap alignment to `uv + .venv`: closed
-- next recommended vertical: `source-ingestion-framework`
+- next recommended vertical: `first-source-infojobs`
 
 ## Source of truth
 

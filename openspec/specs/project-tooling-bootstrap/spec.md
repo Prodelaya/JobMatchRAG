@@ -79,7 +79,13 @@ The system MUST update `docs/architecture/vertical-roadmap.md` to show `uv-boots
 - GIVEN a contributor reviews the living roadmap
 - WHEN they inspect the ordered list of changes
 - THEN `uv-bootstrap-alignment` appears after `project-tooling-bootstrap`
-- AND `source-ingestion-framework` remains the next functional vertical after that alignment step
+- AND `source-ingestion-framework` is recorded as the next functional vertical after that alignment step in the historical sequence
+
+#### Scenario: Current roadmap advances past the closed ingestion framework
+- GIVEN the bootstrap alignment and ingestion framework changes are already closed
+- WHEN a contributor checks the current recommended next vertical
+- THEN the living roadmap points to `first-source-infojobs`
+- AND the bootstrap spec does not imply that `source-ingestion-framework` is still pending
 
 #### Scenario: Scope remains explicitly narrow in sequencing docs
 - GIVEN the roadmap explains why the new change exists

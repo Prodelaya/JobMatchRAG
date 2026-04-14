@@ -23,12 +23,17 @@ from jobmatchrag.source_ingestion.orchestrator import IngestionGuardrails, Inges
 class FakeAdapter:
     source_key = "fake-source"
 
-    def __init__(self, responses: Sequence[FetchOutcome | Exception]) -> None:
+    def __init__(
+        self,
+        responses: Sequence[FetchOutcome | Exception],
+        *,
+        checkpoint_support: bool = True,
+    ) -> None:
         self.capabilities = SourceCapabilities(
             pagination=PaginationSupport.CURSOR,
             time_windows=TimeWindowSupport.UPDATED_AT,
             supported_filters=frozenset({"keyword"}),
-            checkpoint_support=True,
+            checkpoint_support=checkpoint_support,
             rate_limit_support=RateLimitSupport.EXPLICIT,
         )
         self._responses = list(responses)
@@ -53,6 +58,20 @@ class FakeAdapter:
             retryable=False,
             message=str(error),
         )
+
+
+class MutatingAdapter(FakeAdapter):
+    def fetch(self, context: FetchContext) -> FetchOutcome:
+        context.requested_filters["keyword"] = "golang"
+        nested = context.requested_filters.get("meta")
+        if isinstance(nested, dict):
+            nested["location"] = "onsite"
+        return super().fetch(context)
+
+
+class BrokenClassifierAdapter(FakeAdapter):
+    def classify_error(self, error: Exception) -> ErrorClassification:
+        raise RuntimeError("classifier exploded")
 
 
 def build_job(**overrides: object) -> IngestionJob:
@@ -134,13 +153,15 @@ def test_item_budget_truncates_forwarded_material_to_the_allowed_limit() -> None
     )
     orchestrator = IngestionOrchestrator(guardrails=IngestionGuardrails(max_items=5))
 
-    result = orchestrator.execute_job(build_job(max_items=1), adapter)
+    result = orchestrator.execute_job(build_job(max_items=1, checkpoint_in="cp-previous"), adapter)
 
     assert result.run.status is RunStatus.PARTIAL
     assert result.run.outcome_reason == "bounded run scope reached"
     assert result.run.counters.fetch_calls == 1
     assert result.run.counters.raw_items_seen == 3
     assert result.run.counters.raw_items_forwarded == 1
+    assert result.run.checkpoint_in == "cp-previous"
+    assert result.run.checkpoint_out == "cp-previous"
     assert result.raw_handoff == ({"id": "1"},)
 
 
@@ -224,6 +245,7 @@ def test_job_item_budget_is_shared_with_context() -> None:
 
     assert result.run.status is RunStatus.PARTIAL
     assert adapter.contexts[0].remaining_item_budget == 2
+    assert result.run.checkpoint_out == "cp-1"
     assert result.run.outcome_reason == "bounded run scope reached"
 
 
@@ -242,6 +264,22 @@ def test_job_checkpoint_is_seeded_into_run_and_fetch_context() -> None:
     assert adapter.contexts[0].checkpoint == "cp-1"
 
 
+def test_checkpoint_state_is_ignored_when_adapter_does_not_support_it() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(raw_items=({"id": "1"},), next_checkpoint="cp-2", exhausted=True),
+        ],
+        checkpoint_support=False,
+    )
+    orchestrator = IngestionOrchestrator()
+
+    result = orchestrator.execute_job(build_job(checkpoint_in="cp-1"), adapter)
+
+    assert result.run.checkpoint_in is None
+    assert result.run.checkpoint_out is None
+    assert adapter.contexts[0].checkpoint is None
+
+
 def test_retryable_failure_becomes_failed_when_retry_budget_is_zero() -> None:
     adapter = FakeAdapter(responses=[TimeoutError("temporary timeout")])
     orchestrator = IngestionOrchestrator(guardrails=IngestionGuardrails(max_retries=0))
@@ -251,6 +289,33 @@ def test_retryable_failure_becomes_failed_when_retry_budget_is_zero() -> None:
     assert result.run.status is RunStatus.FAILED
     assert result.run.outcome_reason == "retry budget exhausted"
     assert result.run.retry_count == 0
+
+
+def test_classification_failure_falls_back_to_structured_terminal_error() -> None:
+    adapter = BrokenClassifierAdapter(responses=[RuntimeError("boom")])
+    orchestrator = IngestionOrchestrator()
+
+    result = orchestrator.execute_job(build_job(), adapter)
+
+    assert result.run.status is RunStatus.FAILED
+    assert result.run.outcome_reason == "terminal adapter error"
+    assert result.run.error_summary is not None
+    assert result.run.error_summary.category is ErrorCategory.UNKNOWN
+    assert result.run.error_summary.retryable is False
+    assert result.run.error_summary.message == "boom"
+    assert result.run.error_summary.details == {
+        "original_error_type": "RuntimeError",
+        "classification_error_type": "RuntimeError",
+        "classification_error_message": "classifier exploded",
+    }
+
+
+def test_execute_job_fails_fast_when_job_source_key_does_not_match_adapter() -> None:
+    adapter = FakeAdapter(responses=[])
+    orchestrator = IngestionOrchestrator()
+
+    with pytest.raises(ValueError, match="job source_key does not match adapter source_key"):
+        orchestrator.execute_job(build_job(source_key="other-source"), adapter)
 
 
 def test_fake_adapter_requires_scripted_responses() -> None:
@@ -265,3 +330,74 @@ def test_fake_adapter_requires_scripted_responses() -> None:
                 capability_snapshot=adapter.capabilities,
             )
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("max_retries", -1), ("max_fetch_calls", -1), ("max_items", -1)],
+)
+def test_ingestion_job_rejects_negative_guardrail_values(field: str, value: int) -> None:
+    expected = rf"{field} must be >= 0" if field == "max_retries" else rf"{field} must be > 0"
+    with pytest.raises(ValueError, match=expected):
+        build_job(**{field: value})
+
+
+@pytest.mark.parametrize(("field", "value"), [("max_fetch_calls", 0), ("max_items", 0)])
+def test_ingestion_job_rejects_zero_scoped_budgets(field: str, value: int) -> None:
+    with pytest.raises(ValueError, match=rf"{field} must be > 0"):
+        build_job(**{field: value})
+
+
+def test_ingestion_job_rejects_inverted_time_window() -> None:
+    with pytest.raises(ValueError, match="window_start must be <= window_end"):
+        build_job(
+            window_start=datetime(2026, 4, 14, 12, 0, 0),
+            window_end=datetime(2026, 4, 14, 11, 0, 0),
+        )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"max_retries": -1}, "max_retries must be >= 0"),
+        ({"max_fetch_calls": -1}, "max_fetch_calls must be > 0"),
+        ({"max_fetch_calls": 0}, "max_fetch_calls must be > 0"),
+        ({"max_items": -1}, "max_items must be > 0"),
+        ({"max_items": 0}, "max_items must be > 0"),
+    ],
+)
+def test_ingestion_guardrails_reject_negative_values(
+    kwargs: dict[str, int], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        IngestionGuardrails(**kwargs)
+
+
+def test_adapter_mutation_of_nested_requested_filters_does_not_leak_into_run_snapshot() -> None:
+    adapter = MutatingAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "1"},),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+    orchestrator = IngestionOrchestrator()
+    job = build_job(
+        filter_intent=FilterIntent(
+            provider_filters={"keyword": "python", "meta": {"location": "remote"}}
+        )
+    )
+
+    result = orchestrator.execute_job(job, adapter)
+
+    assert result.run.status is RunStatus.COMPLETED
+    assert result.run.filter_snapshot.provider_filters == {
+        "keyword": "python",
+        "meta": {"location": "remote"},
+    }
+    assert adapter.contexts[0].requested_filters == {
+        "keyword": "golang",
+        "meta": {"location": "onsite"},
+    }

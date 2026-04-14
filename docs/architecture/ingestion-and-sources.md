@@ -41,7 +41,7 @@ Dentro de esa secuencia, la responsabilidad propia de ingesta cubre:
 
 1. seleccionar la fuente y abrir contexto de run;
 2. ejecutar captura bajo el adapter correspondiente;
-3. persistir `RawOfferSnapshot` sin reinterpretación destructiva;
+3. entregar material raw trazable para persistencia downstream sin reinterpretación destructiva;
 4. entregar material trazable a normalización.
 
 La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final del producto.
@@ -54,7 +54,8 @@ La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final de
 - ejecución `job -> run`;
 - trazabilidad estructurada por run;
 - taxonomía de errores + retries selectivos;
-- guardrails por defecto de retries, alcance y rate-limit awareness.
+- guardrails por defecto de retries, alcance y rate-limit awareness;
+- handoff raw trazable hacia la futura persistencia de `RawOfferSnapshot`.
 
 Quedan fuera de este framework:
 
@@ -70,8 +71,8 @@ Toda fuente futura debe respetar un contrato común equivalente a:
 ```text
 SourceAdapter
 - source_key
-- capabilities: {pagination, time_windows, supported_filters, checkpoints, rate_limit}
-- fetch(run_context) -> FetchOutcome(raw_items, checkpoint_hint, rate_limit_observations)
+- capabilities: {pagination, time_windows, supported_filters, checkpoint_support, rate_limit_support}
+- fetch(run_context) -> FetchOutcome(raw_items, next_checkpoint, exhausted, rate_limit_observations)
 - classify_error(error) -> ErrorClassification(category, retryable)
 ```
 
@@ -79,10 +80,12 @@ SourceAdapter
 
 - `fetch(run_context)` obtiene resultados bajo contexto explícito de run;
 - `capabilities` declara qué optimizaciones source-side existen sin volverlas autoridad canónica;
+- `checkpoint_support` y `next_checkpoint` describen continuidad incremental sin imponer schema físico de storage;
+- `rate_limit_support` declara si la fuente expone señales explícitas de cuota o solo observación pasiva;
 - `classify_error(error)` traduce fallos de fuente a clases operables comunes;
-- el framework consume snapshots raw y metadata operativa, pero NO absorbe normalización ni scoring;
+- el framework entrega payload raw y metadata operativa, pero NO implementa todavía la persistencia de `RawOfferSnapshot` dentro de este módulo compartido;
 - el adapter encapsula rarezas de la fuente, pero no redefine el dominio;
-- la salida debe poder seguir auditándose hasta el `RawOfferSnapshot` original.
+- la salida debe poder seguir auditándose hasta el payload raw original y, cuando exista la etapa `raw`, hasta su `RawOfferSnapshot` persistido.
 
 ## 6. Job and run traceability model
 
@@ -142,12 +145,13 @@ Sin fijar schema físico todavía, el modelo de run debe distinguir al menos:
 
 | Status intent | Meaning |
 |---|---|
-| `started` | ejecución abierta |
+| `pending` | run creado pero todavía no ejecutándose |
+| `running` | ejecución abierta |
 | `completed` | ejecución terminada con resultado usable |
 | `partial` | ejecución con material recuperado pero incidencias |
 | `failed` | ejecución cerrada sin resultado usable |
 
-El objetivo no es tener nombres mágicos hoy, sino una semántica operable y auditable.
+El vocabulario activo del framework usa exactamente `pending`, `running`, `completed`, `partial` y `failed`. El objetivo no es inventar nombres mágicos, sino mantener una semántica operable y auditable coherente entre documentación e implementación.
 
 Runs `partial` existen para reflejar degradación real: hubo material usable, pero el run cerró bajo límites operativos, retries agotados o presión de rate limit.
 

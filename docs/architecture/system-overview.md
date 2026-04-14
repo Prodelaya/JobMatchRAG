@@ -61,7 +61,7 @@ La foundation se organiza por capacidades, no por capas técnicas globales.
 
 | Module | Responsibility |
 |---|---|
-| `source-ingestion` | framework común adapter-agnostic para `job -> run`, capabilities, retries, guardrails y snapshots raw; NO define adapters concretos ni downstream stages |
+| `source-ingestion` | framework común adapter-agnostic para `job -> run`, capabilities, retries, guardrails y handoff raw trazable; NO define adapters concretos ni downstream stages ni persiste todavía `RawOfferSnapshot` dentro de este módulo |
 | `offer-normalization` | shape común, calidad mínima de campos, mapping por fuente |
 | `offer-canonicalization` | dedupe, evidencias, empresa/oferta canónica, republicación |
 | `offer-eligibility` | filtros duros previos al scoring |

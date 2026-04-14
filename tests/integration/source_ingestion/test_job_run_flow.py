@@ -105,3 +105,23 @@ def test_provider_filter_intent_is_not_treated_as_canonical_eligibility() -> Non
     assert result.run.checkpoint_in == "checkpoint-001"
     assert result.raw_handoff == ({"id": "offer-1", "title": "Python Engineer"},)
     assert adapter.seen_contexts[0].checkpoint == "checkpoint-001"
+
+
+def test_run_filter_snapshot_is_detached_from_later_caller_mutation() -> None:
+    adapter = TraceableFakeAdapter()
+    orchestrator = IngestionOrchestrator()
+    provider_filters = {"keyword": "python", "meta": {"location": "remote"}}
+    job = IngestionJob(
+        job_id="job-filter-snapshot-1",
+        source_key="traceable-source",
+        filter_intent=FilterIntent(provider_filters=provider_filters),
+    )
+
+    result = orchestrator.execute_job(job, adapter)
+    provider_filters["keyword"] = "golang"
+    provider_filters["meta"]["location"] = "onsite"
+
+    assert result.run.filter_snapshot.provider_filters == {
+        "keyword": "python",
+        "meta": {"location": "remote"},
+    }

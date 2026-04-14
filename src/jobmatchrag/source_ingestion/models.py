@@ -1,15 +1,43 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
 from .contracts import (
     ErrorClassification,
     RateLimitObservation,
     SourceCapabilities,
 )
+
+
+def _freeze_filter_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_filter_value(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_filter_value(item) for item in value)
+    return deepcopy(value)
+
+
+def thaw_filter_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: thaw_filter_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [thaw_filter_value(item) for item in value]
+    return deepcopy(value)
+
+
+def _validate_non_negative(name: str, value: int | None) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{name} must be >= 0")
+
+
+def _validate_positive(name: str, value: int | None) -> None:
+    if value is not None and value <= 0:
+        raise ValueError(f"{name} must be > 0")
 
 
 class RunStatus(StrEnum):
@@ -22,10 +50,16 @@ class RunStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class FilterIntent:
-    provider_filters: dict[str, Any] = field(default_factory=dict)
+    provider_filters: Mapping[str, Any] = field(default_factory=dict)
     canonical_filters_note: str = (
         "Provider/source filters are advisory optimization only; internal eligibility remains canonical."
     )
+
+    def __post_init__(self) -> None:
+        detached_filters = MappingProxyType(
+            {key: _freeze_filter_value(value) for key, value in dict(self.provider_filters).items()}
+        )
+        object.__setattr__(self, "provider_filters", detached_filters)
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +75,17 @@ class IngestionJob:
     max_fetch_calls: int = 10
     max_items: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative("max_retries", self.max_retries)
+        _validate_positive("max_fetch_calls", self.max_fetch_calls)
+        _validate_positive("max_items", self.max_items)
+        if (
+            self.window_start is not None
+            and self.window_end is not None
+            and self.window_start > self.window_end
+        ):
+            raise ValueError("window_start must be <= window_end")
 
 
 @dataclass(slots=True)
