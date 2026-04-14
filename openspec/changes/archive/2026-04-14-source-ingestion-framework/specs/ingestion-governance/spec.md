@@ -1,12 +1,10 @@
-# Ingestion Governance Specification
+# Delta for Ingestion Governance
 
-## Purpose
-Definir la gobernanza mínima de fuentes, runs y guardrails de captura.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Source governance and adapter contract
 The system MUST govern ingestion through an adapter-agnostic framework that starts from a shared `SourceAdapter` contract and job/run execution model. Sources MAY be onboarded incrementally, but every execution SHALL create a traceable run with status, timestamps, counters, and categorized errors. Source-side filtering SHOULD be used only as an optimization when supported, while internal hard filters remain the canonical authority before downstream scoring.
+(Previously: The requirement anchored first execution to InfoJobs and only stated minimal adapter/run governance.)
 
 #### Scenario: First governed source execution
 - GIVEN an approved source is configured

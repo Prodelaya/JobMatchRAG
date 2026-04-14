@@ -61,7 +61,7 @@ La foundation se organiza por capacidades, no por capas técnicas globales.
 
 | Module | Responsibility |
 |---|---|
-| `source-ingestion` | registry de fuentes, adapters, runs, snapshots raw |
+| `source-ingestion` | framework común adapter-agnostic para `job -> run`, capabilities, retries, guardrails y snapshots raw; NO define adapters concretos ni downstream stages |
 | `offer-normalization` | shape común, calidad mínima de campos, mapping por fuente |
 | `offer-canonicalization` | dedupe, evidencias, empresa/oferta canónica, republicación |
 | `offer-eligibility` | filtros duros previos al scoring |
@@ -77,6 +77,7 @@ La foundation se organiza por capacidades, no por capas técnicas globales.
 Los siguientes controles envuelven todo el pipeline:
 
 - **RunRecord** para trazabilidad por ejecución;
+- snapshot de capabilities/filter intent por run dentro de `source-ingestion`;
 - políticas de retención por clase de dato;
 - métricas mínimas de éxito, fallo, volumen y latencia operativa;
 - clasificación de errores retryable vs terminal;
@@ -107,6 +108,7 @@ Todo change vertical posterior debe reutilizar estas decisiones:
 - pipeline canónico por etapas;
 - separación explícita entre superficie pública y operaciones protegidas;
 - módulos organizados por capacidad;
+- `source-ingestion` entrega raw + trazabilidad y NO absorbe normalización, eligibility ni scoring;
 - cross-cutting controls de runs, retención, métricas y reproceso.
 
 Si una vertical necesita más detalle, lo agrega sin reabrir esta foundation.

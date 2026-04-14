@@ -74,7 +74,23 @@ Entre las operaciones que deben quedar detrás de esa barrera están:
 - la superficie debe ser **MFA-ready**;
 - las rutas protegidas no se mezclan con la experiencia pública de portfolio.
 
-## 6. Privacy and Security Baseline
+## 6. Source-ingestion guardrails baseline
+
+El framework común de ingesta debe aplicar guardrails operativos por defecto antes de cualquier adapter concreto:
+
+- retries acotados por run;
+- alcance acotado del run (fetch calls y/o items) para evitar loops ciegos;
+- cierre explícito `partial` cuando hubo material usable pero el run terminó degradado;
+- ejecución rate-limit-aware que registre observaciones del límite encontrado.
+
+### Guardrail policy intent
+
+- los límites existen para contener riesgo operativo, no para imponer thresholds mágicos de proveedor;
+- una política retryable NO autoriza reintentos infinitos;
+- un run degradado debe seguir siendo auditable aunque entregue material usable;
+- los thresholds finos de backoff/cadencia siguen abiertos para verticales operativas posteriores.
+
+## 7. Privacy and Security Baseline
 
 La foundation fija una política base prudente:
 
@@ -93,7 +109,7 @@ La transparencia pública del sistema es valiosa, pero no justifica exponer:
 - controles administrativos;
 - señales que faciliten abuso o interpretación incorrecta del sistema.
 
-## 7. Policy Relationship with Other Foundation Docs
+## 8. Policy Relationship with Other Foundation Docs
 
 Este documento depende y complementa a:
 
@@ -102,7 +118,7 @@ Este documento depende y complementa a:
 - `docs/architecture/scoring-foundation.md` para prioridad del core de matching sobre capacidades secundarias;
 - `docs/PRD-JobMatchRAG.md` para la degradación del recruiter chat antes del core.
 
-## 8. Boundaries for Future Vertical Changes
+## 9. Boundaries for Future Vertical Changes
 
 Las siguientes verticales deben implementar sin reabrir estas reglas:
 
@@ -110,6 +126,7 @@ Las siguientes verticales deben implementar sin reabrir estas reglas:
 - backups sobre la fuente de verdad operativa;
 - degradación comenzando por recruiter chat;
 - operaciones internas detrás de superficie admin dedicada;
+- guardrails de ingesta con retries acotados, bounded scope y cierre `partial` explícito;
 - baseline de privacidad/seguridad alineada con exposición pública limitada.
 
 El detalle técnico operativo adicional debe expandir esta base sin reabrirla, tomando `docs/operations/observability-and-security.md` como referencia para métricas, alertas, audit trail y controles de superficie protegida.

@@ -51,10 +51,10 @@ Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futur
 
 ## 4. Recommended next change
 
-Con `decision-foundation-pack`, `project-tooling-bootstrap` y `uv-bootstrap-alignment` ya cerrados, la siguiente vertical recomendada es:
+Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment` y `source-ingestion-framework` ya cerrados, la siguiente vertical recomendada es:
 
-1. `source-ingestion-framework`
-   - convertir la foundation aceptada de ingesta en capacidad implementable;
-   - reutilizar contratos, boundaries y guardrails ya cerrados sin reabrirlos.
+1. `first-source-infojobs`
+   - implementar la primera fuente real sobre el framework común ya cerrado;
+   - validar el contrato reusable de adapters, jobs/runs, errores, retries y guardrails con un proveedor concreto sin mezclar todavía normalización ni scoring.
 
 La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda sobre recomendaciones históricas de este documento.

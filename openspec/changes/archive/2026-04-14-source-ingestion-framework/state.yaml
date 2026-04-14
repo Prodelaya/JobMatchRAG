@@ -1,0 +1,8 @@
+change: source-ingestion-framework
+status: closed
+phase: archive
+artifact_store: hybrid
+archived_on: 2026-04-14
+verify_verdict: pass-with-warnings
+notable_warning: Framework-boundary scenario evidence remains partly indirect; add a dedicated structural boundary regression later.
+next_recommended: first-source-infojobs

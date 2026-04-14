@@ -28,7 +28,7 @@ El pipeline del dominio sigue esta secuencia:
 
 ### 3.1 `source`
 
-Una fuente se ejecuta bajo un `RunRecord`. Ese run tiene contexto, timestamps, estado y errores clasificados.
+Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job -> run`. Ese run tiene contexto, timestamps, estado, counters, checkpoints, snapshot de capabilities/filter intent y errores clasificados.
 
 ### 3.2 `raw`
 
@@ -95,7 +95,34 @@ Actualizar una oferta existente y detectar una nueva oportunidad NO son lo mismo
 - una oferta descartada por elegibilidad puede seguir siendo parte del histórico interno aunque no se publique;
 - las notificaciones dependen de novedad + score, no solo de existencia.
 
-## 8. Future `candidate_id` Boundary
+## 8. Source execution traceability model
+
+El dominio de ingesta necesita distinguir intención reusable de intento ejecutado:
+
+| Object | Intent |
+|---|---|
+| `IngestionJob` | intención reusable para correr una fuente con cierto filter intent, ventana temporal y guardrails máximos |
+| `RunRecord` / `IngestionRun` | intento concreto con status, counters, checkpoints, retries, rate-limit observations y outcome |
+
+### 8.1 Run closure semantics
+
+- `completed`: el run agotó su trabajo esperado y dejó material usable sin degradación operativa relevante;
+- `partial`: el run dejó material usable, pero cerró degradado por límites operativos, retries agotados o rate limit;
+- `failed`: el run cerró sin material usable o con error terminal que impidió handoff válido.
+
+### 8.2 Traceability fields that must survive
+
+El record operativo debe preservar, como mínimo:
+
+- `job_id`, `run_id`, `source_key`;
+- snapshot de capacidades declaradas por el adapter;
+- snapshot de filtros source-side intentados;
+- `checkpoint_in` / `checkpoint_out`;
+- counters de fetch/items capturados;
+- retries intentados + clasificación final del error;
+- observaciones de rate limit y estado final.
+
+## 9. Future `candidate_id` Boundary
 
 V1 sigue siendo **single-candidate**. Aun así, la foundation deja clara la frontera para un futuro `candidate_id`:
 
@@ -105,11 +132,12 @@ V1 sigue siendo **single-candidate**. Aun así, la foundation deja clara la fron
 
 En otras palabras: se deja la junta de dilatación, pero NO se construye el edificio de al lado todavía.
 
-## 9. What Vertical Changes Must Respect
+## 10. What Vertical Changes Must Respect
 
 Todo change futuro debe respetar estas reglas:
 
 - no mezclar `raw`, `normalized`, `canonical`, `eligibility`, `scored` y `published` en un solo estado opaco;
 - no perder evidencia por fuente al consolidar;
+- no mezclar la semántica `job` reusable con `run` ejecutado;
 - no confundir actualización normal con republicación;
 - no introducir multi-candidate real dentro de este change foundation.

@@ -27,6 +27,8 @@ Como mínimo, la operación debe poder observar:
 - runs iniciados, completados, parciales y fallidos por fuente;
 - duración por run y por fuente;
 - volumen capturado por run;
+- checkpoints de entrada/salida cuando existan;
+- capabilities snapshot y filter intent aplicado por run;
 - errores `retryable` vs `terminal`;
 - retries ejecutados y agotados.
 
@@ -67,7 +69,9 @@ El sistema debe conservar un rastro auditable suficiente para responder:
 - qué fuente o acción se ejecutó;
 - quién o qué disparó la operación;
 - cuándo empezó y terminó;
+- qué capacidades y filtros source-side se declararon/intentarion;
 - con qué estado cerró;
+- qué checkpoint y observaciones de rate limit dejó;
 - qué errores relevantes ocurrieron;
 - si hubo publicación o alerta derivada;
 - si una acción fue administrativa y sobre qué superficie protegida ocurrió.
@@ -102,9 +106,11 @@ La operación debe poder seguir un run de punta a punta sin inspeccionar tablas 
 Eso implica que la visibilidad mínima debe distinguir:
 
 - fuente y contexto del run;
+- `job_id` y `run_id` enlazables;
 - estado final del run;
 - etapa donde ocurrió el fallo;
 - clase del error (`retryable` o `terminal`);
+- retries agotados, checkpoints y rate-limit observations relevantes;
 - impacto visible posterior: sin publicación, con publicación o con alerta Telegram.
 
 Los errores relevantes se conservan según la política de retención aceptada y deben quedar suficientemente contextualizados para diagnóstico posterior.
