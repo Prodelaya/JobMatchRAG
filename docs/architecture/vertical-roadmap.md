@@ -37,15 +37,17 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]`, preserva el contrato `.venv/bin/python -m ...` y no agrega tooling nuevo ni capacidad funcional de ingesta. |
 | 4 | `source-ingestion-framework` | cerrado | `uv-bootstrap-alignment` | Definir e implementar el framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
 | 5 | `first-source-infojobs` | cerrado | `source-ingestion-framework` | Implementó la primera fuente real sobre InfoJobs API con adapter concreto, tests verdes, preservación raw `list/detail` y documentación viva alineada. |
-| 6 | `offer-normalization-canonicalization` | pendiente | `first-source-infojobs` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
-| 7 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar filtros duros y scoring base explicable por reglas. |
-| 8 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
-| 9 | `telegram-alerts` | pendiente | `rule-based-scoring` | Notificar nuevas oportunidades con score suficiente y anti-duplicado. |
-| 10 | `public-dashboard` | pendiente | `rule-based-scoring` | Publicar ofertas evaluadas con score, warnings, razones cortas y frescura. |
-| 11 | `recruiter-rag-corpus` | pendiente | `decision-foundation-pack` | Definir y preparar el corpus permitido para recruiter chat. |
-| 12 | `recruiter-chat-experience` | pendiente | `recruiter-rag-corpus` | Construir la experiencia conversacional acotada para recruiters. |
-| 13 | `admin-operations-panel` | pendiente | `source-ingestion-framework`, `rule-based-scoring` | Exponer operaciones protegidas para runs, reprocesos, reintentos y visibilidad operativa. |
-| 14 | `observability-and-ops-hardening` | pendiente | `source-ingestion-framework`, `telegram-alerts`, `public-dashboard` | Consolidar métricas, alertas, auditoría, seguridad y endurecimiento operativo. |
+| 6 | `source-search-strategy` | pendiente | `first-source-infojobs` | Definir la estrategia agnóstica de búsqueda/captura: familias de queries objetivo, filtros canónicos deseados, prioridades geográficas y reglas de degradación cuando una fuente no soporte algo. |
+| 7 | `infojobs-search-mapping` | pendiente | `source-search-strategy`, `first-source-infojobs` | Traducir la estrategia de búsqueda agnóstica a las capacidades reales de InfoJobs (`q`, ubicación, `sinceDate`, filtros soportados) sin mezclarla con filtros internos canónicos. |
+| 8 | `offer-normalization-canonicalization` | pendiente | `infojobs-search-mapping` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
+| 9 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar filtros duros y scoring base explicable por reglas. |
+| 10 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
+| 11 | `telegram-alerts` | pendiente | `rule-based-scoring` | Notificar nuevas oportunidades con score suficiente y anti-duplicado. |
+| 12 | `public-dashboard` | pendiente | `rule-based-scoring` | Publicar ofertas evaluadas con score, warnings, razones cortas y frescura. |
+| 13 | `recruiter-rag-corpus` | pendiente | `decision-foundation-pack` | Definir y preparar el corpus permitido para recruiter chat. |
+| 14 | `recruiter-chat-experience` | pendiente | `recruiter-rag-corpus` | Construir la experiencia conversacional acotada para recruiters. |
+| 15 | `admin-operations-panel` | pendiente | `source-ingestion-framework`, `rule-based-scoring` | Exponer operaciones protegidas para runs, reprocesos, reintentos y visibilidad operativa. |
+| 16 | `observability-and-ops-hardening` | pendiente | `source-ingestion-framework`, `telegram-alerts`, `public-dashboard` | Consolidar métricas, alertas, auditoría, seguridad y endurecimiento operativo. |
 
 ---
 
@@ -70,6 +72,6 @@ Si eso pasa, el cambio debe explicitar:
 
 Hoy, el foco recomendado pasa a ser:
 
-**abrir `offer-normalization-canonicalization`**
+**abrir `source-search-strategy`**
 
-Razón: `first-source-infojobs` ya quedó cerrado y archivado con su spec principal sincronizada. El siguiente paso natural es transformar la evidencia cruda ya capturada en ofertas canónicas, deduplicadas y listas para scoring/publicación.
+Razón: `first-source-infojobs` ya dejó operativo el primer adapter real, pero todavía falta decidir qué universo de búsquedas quiere capturar JobMatchRAG de forma agnóstica a proveedor. Cerrar primero esa estrategia reduce el riesgo de acoplar el producto a los filtros concretos de InfoJobs y deja mejor preparado el cambio posterior `infojobs-search-mapping` antes de pasar a normalización/canonicalización.
