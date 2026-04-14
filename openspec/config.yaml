@@ -1,27 +1,56 @@
 schema: spec-driven
 
-strict_tdd: false
-
-testing:
-  runner: pytest
+strict_tdd: true
 
 context: |
-  Tech stack: Python bootstrap baseline only.
-  Architecture: minimal src-layout package scaffold without runtime services.
-  Testing: Standard Mode, strict TDD disabled, verify contract defined for pytest/ruff/mypy.
+  Tech stack: Python 3.12 package on setuptools with src layout under `src/jobmatchrag`.
+  Architecture: living docs target a FastAPI + Celery modular monolith; current implemented slice is the pure-Python `source_ingestion` framework.
+  Testing: pytest with unit + integration suites under `tests/`; no E2E tool and no coverage plugin configured.
+  Style: `.venv/bin/python -m ruff check .`, `.venv/bin/python -m mypy src`, `.venv/bin/python -m pytest`.
+
+testing:
+  detected_at: 2026-04-14
+  runner: pytest
+  test_command: .venv/bin/python -m pytest
+  framework: pytest 9.0.3
+  layers:
+    unit: pytest
+    integration: pytest
+    e2e: ""
+  coverage_command: ""
+  quality:
+    linter: .venv/bin/python -m ruff check .
+    type_checker: .venv/bin/python -m mypy src
+    formatter: ""
 
 rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
   apply:
     instructions:
-      - Read all relevant accepted artifacts before writing.
-      - Keep the implementation minimal and directly tied to the accepted bootstrap scope.
-      - Do not introduce FastAPI, Celery, CI, hooks, Docker, Makefile, lockfiles, or AGENTS.md in this change.
-    tdd: false
+      - Follow existing code patterns and conventions
+    tdd: true
     test_command: ".venv/bin/python -m pytest"
   verify:
+    instructions:
+      - Run tests if test infrastructure exists
+      - Compare implementation against every spec scenario
     test_command: ".venv/bin/python -m pytest"
     build_command: ""
     coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas (large removals)
 
 verify:
   - .venv/bin/python -m ruff check .
