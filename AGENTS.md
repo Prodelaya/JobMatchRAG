@@ -24,6 +24,8 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repositor
 
 If a change modifies a documented decision, contract, policy, threshold, boundary, or flow, update the corresponding living document in the same change. If that cannot happen, leave an explicit blocking follow-up instead of letting docs drift.
 
+After each important change, run a full-project `judgment-day` review before considering the work closed. Treat that review as mandatory final validation, not as an optional extra.
+
 Before opening a new change, clarify the specific gaps of that vertical; if real decisions are still missing, do a brief discovery round before proposal/spec.
 
 When a change starts, finishes, splits, or changes the recommended sequence, update `docs/architecture/vertical-roadmap.md` in the same change so the current status and next recommended change stay visible.
