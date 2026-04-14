@@ -29,6 +29,14 @@ When a change starts, finishes, splits, or changes the recommended sequence, upd
 
 ## Local verification
 
+Recommended local bootstrap:
+
+- `uv venv .venv`
+- `uv pip install -e .[dev]`
+
+This recommended local bootstrap preserves the existing `.venv/bin/python -m ...` verification contract.
+It does not adopt `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime, or functional scope changes.
+
 - `.venv/bin/python -m ruff check .`
 - `.venv/bin/python -m mypy src`
 - `.venv/bin/python -m pytest`

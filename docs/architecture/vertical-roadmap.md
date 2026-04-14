@@ -34,17 +34,18 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | --- | --- | --- | --- | --- |
 | 1 | `decision-foundation-pack` | cerrado | — | Cerrar foundations de producto, arquitectura, scoring, operaciones y documentación viva. |
 | 2 | `project-tooling-bootstrap` | cerrado | `decision-foundation-pack` | Dejar bootstrap Python ejecutable con `.venv`, `pytest`, `ruff`, `mypy` y contrato verify reutilizable. |
-| 3 | `source-ingestion-framework` | siguiente | `project-tooling-bootstrap` | Definir framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
-| 4 | `first-source-infojobs` | pendiente | `source-ingestion-framework` | Implementar la primera fuente real sobre InfoJobs API usando el framework común. |
-| 5 | `offer-normalization-canonicalization` | pendiente | `first-source-infojobs` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
-| 6 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar hard filters y scoring base explicable por reglas. |
-| 7 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
-| 8 | `telegram-alerts` | pendiente | `rule-based-scoring` | Notificar nuevas oportunidades con score suficiente y anti-duplicado. |
-| 9 | `public-dashboard` | pendiente | `rule-based-scoring` | Publicar ofertas evaluadas con score, warnings, razones cortas y freshness. |
-| 10 | `recruiter-rag-corpus` | pendiente | `decision-foundation-pack` | Definir y preparar el corpus permitido para recruiter chat. |
-| 11 | `recruiter-chat-experience` | pendiente | `recruiter-rag-corpus` | Construir la experiencia conversacional acotada para recruiters. |
-| 12 | `admin-operations-panel` | pendiente | `source-ingestion-framework`, `rule-based-scoring` | Exponer operaciones protegidas para runs, reprocesos, reintentos y visibilidad operativa. |
-| 13 | `observability-and-ops-hardening` | pendiente | `source-ingestion-framework`, `telegram-alerts`, `public-dashboard` | Consolidar métricas, alertas, auditoría, seguridad y endurecimiento operativo. |
+| 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]` y preserva el contrato `.venv/bin/python -m ...`. |
+| 4 | `source-ingestion-framework` | siguiente | `uv-bootstrap-alignment` | Definir framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
+| 5 | `first-source-infojobs` | pendiente | `source-ingestion-framework` | Implementar la primera fuente real sobre InfoJobs API usando el framework común. |
+| 6 | `offer-normalization-canonicalization` | pendiente | `first-source-infojobs` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
+| 7 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar hard filters y scoring base explicable por reglas. |
+| 8 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
+| 9 | `telegram-alerts` | pendiente | `rule-based-scoring` | Notificar nuevas oportunidades con score suficiente y anti-duplicado. |
+| 10 | `public-dashboard` | pendiente | `rule-based-scoring` | Publicar ofertas evaluadas con score, warnings, razones cortas y freshness. |
+| 11 | `recruiter-rag-corpus` | pendiente | `decision-foundation-pack` | Definir y preparar el corpus permitido para recruiter chat. |
+| 12 | `recruiter-chat-experience` | pendiente | `recruiter-rag-corpus` | Construir la experiencia conversacional acotada para recruiters. |
+| 13 | `admin-operations-panel` | pendiente | `source-ingestion-framework`, `rule-based-scoring` | Exponer operaciones protegidas para runs, reprocesos, reintentos y visibilidad operativa. |
+| 14 | `observability-and-ops-hardening` | pendiente | `source-ingestion-framework`, `telegram-alerts`, `public-dashboard` | Consolidar métricas, alertas, auditoría, seguridad y endurecimiento operativo. |
 
 ---
 
@@ -67,8 +68,8 @@ Si eso pasa, el cambio debe explicitar:
 
 ## 5. Próximo vertical recomendado
 
-Hoy, el siguiente vertical recomendado es:
+Hoy, el siguiente change recomendado es:
 
 **`source-ingestion-framework`**
 
-Razón: es la primera capacidad ejecutable que convierte la foundation y el bootstrap en un framework real sin mezclar todavía fuente concreta, scoring completo, dashboard o recruiter chat.
+Razón: `uv-bootstrap-alignment` ya quedó cerrado y dejó explícito el bootstrap local recomendado con `uv venv .venv` + `uv pip install -e .[dev]`, preservando el contrato `.venv/bin/python -m ...`. Con esa base documental cerrada, el siguiente vertical funcional recomendado pasa a ser **`source-ingestion-framework`**.
