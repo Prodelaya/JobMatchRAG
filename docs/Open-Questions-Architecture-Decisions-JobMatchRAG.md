@@ -49,16 +49,12 @@ Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futur
 
 ---
 
-## 4. Recommended next changes
+## 4. Recommended next change
 
-Secuencia recomendada después de cerrar este foundation pack:
+Con `decision-foundation-pack`, `project-tooling-bootstrap` y `uv-bootstrap-alignment` ya cerrados, la siguiente vertical recomendada es:
 
-1. `project-tooling-bootstrap`
-   - regularizar `openspec/config.yaml`;
-   - definir harness mínimo de verify/build/test para futuros changes ejecutables;
-   - dejar la base de tooling sin mezclarla con decisiones de producto o arquitectura ya cerradas.
-2. `source-ingestion-framework`
+1. `source-ingestion-framework`
    - convertir la foundation aceptada de ingesta en capacidad implementable;
    - reutilizar contratos, boundaries y guardrails ya cerrados sin reabrirlos.
 
-Este documento sigue siendo backlog vivo solo de pendientes reales de producto/arquitectura. Los gaps de tooling quedaron explícitamente separados en `project-tooling-bootstrap`.
+La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda sobre recomendaciones históricas de este documento.

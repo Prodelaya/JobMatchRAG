@@ -28,8 +28,8 @@ El flujo canónico del sistema es:
 | `normalized` | Mapear a shape común comparable | `NormalizedOffer` |
 | `canonical` | Consolidar evidencia y una sola oferta de producto | `CanonicalOffer` + `OfferEvidence[]` |
 | `eligibility` | Aplicar filtros duros previos al scoring | `EligibilityDecision` |
-| `scored` | Calcular regla base y ajuste LLM acotado | `ScoreBreakdown` + `FinalScore` |
-| `published/notified` | Proyectar a dashboard y decidir alerta | `DashboardProjection` + `TelegramNotification?` |
+| `scored` | Calcular regla base y ajuste LLM acotado | `ScoreBreakdown` + `LLMAdjustment` |
+| `published/notified` | Proyectar a dashboard y decidir alerta | `PublishedOfferProjection` + `TelegramNotification?` |
 
 ## 4. High-Level Boundaries
 

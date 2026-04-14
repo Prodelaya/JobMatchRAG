@@ -27,6 +27,12 @@ Before opening a new change, clarify the specific gaps of that vertical; if real
 
 When a change starts, finishes, splits, or changes the recommended sequence, update `docs/architecture/vertical-roadmap.md` in the same change so the current status and next recommended change stay visible.
 
+When a pending decision is resolved or a supposed open question is no longer real, update `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` in the same change so it stays limited to true pending items only.
+
+If a change creates, replaces, or archives a source-of-truth document, update the living-doc index in `AGENTS.md` in the same change.
+
+Before closing a change, explicitly review whether `docs/PRD-JobMatchRAG.md`, architecture docs, operations docs, `docs/architecture/vertical-roadmap.md`, or `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` need updates; if yes, update them in the same change.
+
 ## Local verification
 
 Recommended local bootstrap:
