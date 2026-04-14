@@ -1,26 +1,26 @@
-# Domain & Data Overview — JobMatchRAG
+# Visión general del dominio y los datos — JobMatchRAG
 
-## 1. Purpose
+## 1. Propósito
 
-Este documento define las entidades y transiciones del dominio base de JobMatchRAG. La idea es SIMPLE: separar estados del pipeline para poder auditar, recalcular y evolucionar reglas sin romper histórico.
+Este documento define las entidades y transiciones del dominio base de JobMatchRAG. La idea es SIMPLE: separar estados del pipeline para poder auditar, recalcular y evolucionar reglas sin romper el histórico.
 
-## 2. Core Domain Objects
+## 2. Objetos core del dominio
 
-| Domain object | Role in the system |
+| Objeto de dominio | Rol en el sistema |
 |---|---|
 | `Source` | Registro de una fuente soportada bajo contrato común |
 | `RunRecord` | Trazabilidad de una ejecución por fuente/acción |
 | `RawOfferSnapshot` | Captura original sin reinterpretación |
-| `NormalizedOffer` | Oferta mapeada a shape común comparable |
+| `NormalizedOffer` | Oferta mapeada a una forma común comparable |
 | `CanonicalOffer` | Representación de producto consolidada |
 | `OfferEvidence` | Evidencia por fuente que respalda la oferta canónica |
 | `EligibilityDecision` | Resultado de filtros duros y motivos |
-| `ScoreBreakdown` | Resultado auditable de scoring por reglas |
-| `LLMAdjustment` | Delta acotado y explicado sobre score base |
-| `PublishedOfferProjection` | Vista calculada para dashboard público |
+| `ScoreBreakdown` | Resultado auditable del scoring por reglas |
+| `LLMAdjustment` | Delta acotado y explicado sobre el score base |
+| `PublishedOfferProjection` | Vista calculada para el dashboard público |
 | `TelegramNotification` | Registro de alerta enviada por nueva oportunidad |
 
-## 3. Lifecycle by Stage
+## 3. Lifecycle por etapa
 
 El pipeline del dominio sigue esta secuencia:
 
@@ -34,7 +34,7 @@ Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job
 
 Cada captura queda como `RawOfferSnapshot`, preservando el material original para debugging, replay y comparación histórica.
 
-Para `first-source-infojobs`, una oferta descubierta siempre conserva el payload de listado y, cuando hubo enriquecimiento para oferta nueva, agrega además un payload de detalle separado. Si el detalle no pudo capturarse por rate limit o presupuesto operativo, la oferta igual sobrevive con su captura `list` y una marca explícita de `detail` diferido. La regla es CLARA: `list` y `detail` son orígenes hermanos con trazabilidad propia, no una fusión destructiva.
+Para `first-source-infojobs`, una oferta descubierta siempre conserva el payload de listado y, cuando hubo enriquecimiento para una oferta nueva, agrega además un payload de detalle separado. Si el detalle no pudo capturarse por rate limit o presupuesto operativo, la oferta igual sobrevive con su captura `list` y una marca explícita de `detail` diferido. La regla es CLARA: `list` y `detail` son orígenes hermanos con trazabilidad propia, no una fusión destructiva.
 
 ### 3.3 `normalized`
 
@@ -50,75 +50,75 @@ Sobre la oferta canónica corren filtros duros. Si falla, el sistema conserva la
 
 ### 3.6 `scored`
 
-La oferta elegible recibe un `ScoreBreakdown` por reglas y, si corresponde, un `LLMAdjustment` limitado. El resultado final determina score y estado operativo.
+La oferta elegible recibe un `ScoreBreakdown` por reglas y, si corresponde, un `LLMAdjustment` limitado. El resultado final determina el score y el estado operativo.
 
 ### 3.7 `published/notified`
 
 La publicación genera una `PublishedOfferProjection` para el dashboard. Si además la oportunidad es nueva y su score final es >= 70, se registra `TelegramNotification`.
 
-## 4. Evidence Model
+## 4. Modelo de evidencia
 
 La evidencia es el puente entre captura y producto. `OfferEvidence` debe permitir responder, como mínimo:
 
 - de qué fuente vino una señal;
 - qué snapshot la respaldó;
 - qué campos fueron consistentes entre fuentes;
-- qué campo ganó como source of truth;
+- qué campo ganó como fuente de verdad;
 - con qué confianza se consolidó una empresa u oferta.
 
 La oferta canónica NUNCA debe borrar la diversidad de evidencia original. Consolida, no aplasta historia.
 
-## 5. Canonicalization Rules
+## 5. Reglas de canonicalización
 
-### 5.1 Canonical offer
+### 5.1 Oferta canónica
 
 Si varias fuentes describen el mismo trabajo activo, el sistema mantiene **una sola** `CanonicalOffer` con múltiples evidencias enlazadas.
 
-### 5.2 Source-of-truth preference
+### 5.2 Preferencia de fuente de verdad
 
 Los campos de la canónica se resuelven con una preferencia definida por fuente, pero con overrides por campo cuando otra evidencia es claramente mejor.
 
-### 5.3 Canonical company
+### 5.3 Empresa canónica
 
-La resolución de empresa debe ser cautelosa y confidence-aware. Si la evidencia no alcanza para unificar sin riesgo, se prefiere no consolidar agresivamente.
+La resolución de empresa debe ser cautelosa y consciente de la confianza. Si la evidencia no alcanza para unificar sin riesgo, se prefiere no consolidar agresivamente.
 
-## 6. Republication Boundary
+## 6. Boundary de republicación
 
 Actualizar una oferta existente y detectar una nueva oportunidad NO son lo mismo.
 
-- si la similitud y continuidad indican el mismo aviso activo, se actualiza evidencia/histórico;
+- si la similitud y la continuidad indican el mismo aviso activo, se actualiza evidencia/histórico;
 - si hay gap temporal y similitud suficiente para inferir republicación, se crea una **nueva oportunidad**;
 - la republicación no debe destruir la relación con el histórico previo, pero sí habilitar una nueva publicación/notificación.
 
-## 7. Publication and History Model
+## 7. Modelo de publicación e histórico
 
 - el histórico completo vive en las capas internas del pipeline;
 - la superficie pública consume una proyección calculada, no las tablas/objetos crudos del dominio;
 - una oferta descartada por elegibilidad puede seguir siendo parte del histórico interno aunque no se publique;
 - las notificaciones dependen de novedad + score, no solo de existencia.
 
-## 8. Source execution traceability model
+## 8. Modelo de trazabilidad de ejecución de fuentes
 
 El dominio de ingesta necesita distinguir intención reusable de intento ejecutado:
 
-| Object | Intent |
+| Objeto | Intención |
 |---|---|
 | `IngestionJob` | intención reusable para correr una fuente con cierto filter intent, ventana temporal y guardrails máximos |
-| `RunRecord` / `IngestionRun` | intento concreto con status, counters, checkpoints, retries, rate-limit observations y outcome |
+| `RunRecord` / `IngestionRun` | intento concreto con status, counters, checkpoints, retries, observaciones de rate limit y outcome |
 
-### 8.1 Run closure semantics
+### 8.1 Semántica de cierre de run
 
 - `completed`: el run agotó su trabajo esperado y dejó material usable sin degradación operativa relevante;
 - `partial`: el run dejó material usable, pero cerró degradado por límites operativos, retries agotados o rate limit;
-- `failed`: el run cerró sin material usable o con error terminal que impidió handoff válido.
+- `failed`: el run cerró sin material usable o con error terminal que impidió un handoff válido.
 
-### 8.2 Traceability fields that must survive
+### 8.2 Campos de trazabilidad que deben sobrevivir
 
 El record operativo debe preservar, como mínimo:
 
 - `job_id`, `run_id`, `source_key`;
-- snapshot de capacidades declaradas por el adapter;
-- snapshot de filtros source-side intentados;
+- snapshot de capabilities declaradas por el adapter;
+- snapshot de filtros intentados del lado de la fuente;
 - `checkpoint_in` / `checkpoint_out`;
 - counters de fetch/items capturados;
 - retries intentados + clasificación final del error;
@@ -126,7 +126,7 @@ El record operativo debe preservar, como mínimo:
 
 Cuando un source adapter produce múltiples capturas raw para la misma oferta en un mismo run, también debe sobrevivir la procedencia de cada payload (`list` vs `detail`) junto con el request efectivo de discovery que originó la evidencia.
 
-## 9. Future `candidate_id` Boundary
+## 9. Boundary futuro de `candidate_id`
 
 V1 sigue siendo **single-candidate**. Aun así, la foundation deja clara la frontera para un futuro `candidate_id`:
 
@@ -136,12 +136,12 @@ V1 sigue siendo **single-candidate**. Aun así, la foundation deja clara la fron
 
 En otras palabras: se deja la junta de dilatación, pero NO se construye el edificio de al lado todavía.
 
-## 10. What Vertical Changes Must Respect
+## 10. Qué deben respetar los cambios verticales
 
 Todo change futuro debe respetar estas reglas:
 
 - no mezclar `raw`, `normalized`, `canonical`, `eligibility`, `scored` y `published` en un solo estado opaco;
 - no perder evidencia por fuente al consolidar;
-- no mezclar la semántica `job` reusable con `run` ejecutado;
+- no mezclar la semántica de `job` reusable con la de `run` ejecutado;
 - no confundir actualización normal con republicación;
 - no introducir multi-candidate real dentro de este change foundation.

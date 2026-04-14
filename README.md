@@ -1,34 +1,34 @@
 # JobMatchRAG
 
-JobMatchRAG is a personal job-intelligence system for Pablo Laya. Its V1 goal is to capture offers, filter hard incompatibilities, consolidate duplicates, compute an explainable score, and expose the result publicly as a living portfolio artifact.
+JobMatchRAG es un sistema personal de inteligencia de empleo para Pablo Laya. Su objetivo en V1 es capturar ofertas, filtrar incompatibilidades duras, consolidar duplicados, calcular un score explicable y exponer el resultado públicamente como un artefacto vivo de portfolio.
 
-## Current status
+## Estado actual
 
-- documentation foundation: closed
-- Python tooling bootstrap: closed
-- local bootstrap alignment to `uv + .venv`: closed
-- next recommended vertical: `offer-normalization-canonicalization`
+- foundation documental: cerrada
+- bootstrap de tooling Python: cerrado
+- alineación del bootstrap local con `uv + .venv`: cerrada
+- siguiente vertical recomendado: `offer-normalization-canonicalization`
 
-## Source of truth
+## Fuente de verdad
 
-The repository uses living documentation as source of truth. The most relevant entry points are:
+El repositorio usa documentación viva como fuente de verdad. Los puntos de entrada más relevantes son:
 
-- `docs/PRD-JobMatchRAG.md` — product framing and V1 scope
-- `docs/architecture/system-overview.md` — system shape, boundaries and pipeline
-- `docs/architecture/vertical-roadmap.md` — recommended change order and next vertical
-- `AGENTS.md` — project working rules and living-doc maintenance expectations
+- `docs/PRD-JobMatchRAG.md` — framing del producto y alcance de V1
+- `docs/architecture/system-overview.md` — forma del sistema, boundaries y pipeline
+- `docs/architecture/vertical-roadmap.md` — orden recomendado de changes y siguiente vertical
+- `AGENTS.md` — reglas de trabajo del proyecto y expectativas de mantenimiento de la documentación viva
 
-## Recommended local bootstrap
+## Bootstrap local recomendado
 
-Use this minimal bootstrap flow to prepare the local `.venv`:
+Usá este flujo mínimo de bootstrap para preparar la `.venv` local:
 
 1. `uv venv .venv`
 2. `uv pip install -e .[dev]`
 
-This recommended local bootstrap preserves the existing `.venv/bin/python -m ...` verification contract.
-It does not adopt `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime, or functional scope changes.
+Este bootstrap local recomendado preserva el contrato existente de verificación `.venv/bin/python -m ...`.
+No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance funcional.
 
-## Local verification
+## Verificación local
 
 - `.venv/bin/python -m ruff check .`
 - `.venv/bin/python -m mypy src`

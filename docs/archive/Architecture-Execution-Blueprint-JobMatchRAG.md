@@ -1,15 +1,15 @@
-# Architecture & Execution Blueprint — JobMatchRAG
+# Plano de arquitectura y ejecución — JobMatchRAG
 
-**Estado:** archivado tras cierre de `decision-foundation-pack`  
-**Rol actual:** inventario histórico del foundation pack, ya NO source of truth operativo.
+**Estado:** archivado tras el cierre de `decision-foundation-pack`
+**Rol actual:** inventario histórico del foundation pack, ya NO es fuente de verdad operativa.
 
 ---
 
-## 1. Migration status
+## 1. Estado de migración
 
-El contenido resuelto de este blueprint fue redistribuido al foundation pack documental del proyecto. A partir de ahora, este archivo queda solo como puente de migración y referencia histórica hasta su archivo/remoción definitiva.
+El contenido resuelto de este plano fue redistribuido al foundation pack documental del proyecto. A partir de ahora, este archivo queda solo como puente de migración y referencia histórica hasta su archivo/remoción definitiva.
 
-La source of truth vive en:
+La fuente de verdad vive en:
 
 - `docs/PRD-JobMatchRAG.md`
 - `docs/architecture/system-overview.md`
@@ -23,15 +23,15 @@ La source of truth vive en:
 
 ---
 
-## 2. Redistribution map
+## 2. Mapa de redistribución
 
-| Blueprint concern | New source of truth |
+| Tema del plano | Nueva fuente de verdad |
 | --- | --- |
 | framing de producto V1, visibilidad pública y Telegram | `docs/PRD-JobMatchRAG.md` |
 | forma general del sistema, boundaries y pipeline | `docs/architecture/system-overview.md` |
 | entidades, lifecycle, evidencia, canonización y republicación | `docs/architecture/domain-data-overview.md` |
 | gobernanza de fuentes, contrato de adapters, runs y errores | `docs/architecture/ingestion-and-sources.md` |
-| hard filters, scoring híbrido, thresholds y explicabilidad | `docs/architecture/scoring-foundation.md` |
+| filtros duros, scoring híbrido, umbrales y explicabilidad | `docs/architecture/scoring-foundation.md` |
 | retención, backups, degradación y baseline de privacidad | `docs/operations/policies-and-controls.md` |
 | métricas mínimas, alertas, audit trail y superficie protegida | `docs/operations/observability-and-security.md` |
 | framing, límites y dependencias del recruiter chat | `docs/product/recruiter-chat.md` |
@@ -39,12 +39,12 @@ La source of truth vive en:
 
 ---
 
-## 3. What this file no longer does
+## 3. Qué deja de hacer este archivo
 
 Este archivo ya NO debe usarse para:
 
-- redefinir arquitectura base;
-- listar backlog completo de decisiones abiertas;
+- redefinir la arquitectura base;
+- listar el backlog completo de decisiones abiertas;
 - mezclar recomendaciones preliminares con decisiones aceptadas;
 - actuar como documento maestro único del proyecto.
 
@@ -52,7 +52,7 @@ Si algo parece contradecir a los documentos foundation, ganan los documentos fou
 
 ---
 
-## 4. Recommended execution after migration
+## 4. Ejecución recomendada después de la migración
 
 Con la foundation documental ya cerrada, la secuencia recomendada pasa a ser:
 
@@ -63,6 +63,6 @@ Razón: primero conviene cerrar el bootstrap de tooling (`openspec/config.yaml` 
 
 ---
 
-## 5. Archive note
+## 5. Nota de archivo
 
-Este archivo se conserva solo como rastro histórico en `docs/archive/`. La source of truth activa permanece en el foundation pack documental y en `openspec/specs/`.
+Este archivo se conserva solo como rastro histórico en `docs/archive/`. La fuente de verdad activa permanece en el foundation pack documental y en `openspec/specs/`.

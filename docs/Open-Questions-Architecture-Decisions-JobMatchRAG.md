@@ -1,22 +1,22 @@
-# Open Questions — JobMatchRAG Foundation
+# Preguntas abiertas — Foundation de JobMatchRAG
 
 **Estado:** solo pendientes reales tras el foundation pack  
-**Objetivo:** dejar visibles únicamente las decisiones que de verdad siguen abiertas, sin mezclar ya-resuelto con backlog futuro de verticales.
+**Objetivo:** dejar visibles únicamente las decisiones que de verdad siguen abiertas, sin mezclar lo ya resuelto con el backlog futuro de verticales.
 
 ---
 
-## 1. Pending items that remain open
+## 1. Pendientes que siguen abiertos
 
 | ID | Pregunta pendiente | Por qué sigue abierta | Cuándo conviene cerrarla |
 | --- | --- | --- | --- |
 | OQ-01 | **Nombre público definitivo del producto** | impacta branding, copy y URL, pero no bloquea la foundation técnica | antes de consolidar el escaparate público final |
-| OQ-02 | **Ubicación exacta del recruiter chat en la experiencia pública** | afecta layout, discoverability, coste percibido y rate limiting UX | antes de la vertical pública/UI del chat |
+| OQ-02 | **Ubicación exacta del recruiter chat en la experiencia pública** | afecta layout, discoverability, coste percibido y UX de rate limiting | antes de la vertical pública/UI del chat |
 | OQ-03 | **Profundidad y cadencia de métricas públicas** | la foundation ya cierra frescura/actividad básica, pero no cuánto detalle mostrar ni con qué actualización | antes de la vertical `public-dashboard` |
-| OQ-04 | **Detalle fino posterior del stack y contrato RAG** | siguen abiertos chunking, retrieval, contrato conversacional, persistencia y defensas avanzadas de abuso | durante `recruiter-rag-corpus` y `recruiter-chat-experience` |
+| OQ-04 | **Detalle fino posterior del stack y contrato RAG** | siguen abiertos chunking, retrieval, contrato conversacional, persistencia y defensas avanzadas contra abuso | durante `recruiter-rag-corpus` y `recruiter-chat-experience` |
 
 ---
 
-## 2. What is no longer open here
+## 2. Qué ya no está abierto acá
 
 Este documento YA NO considera abiertas, dentro de la foundation:
 
@@ -25,18 +25,18 @@ Este documento YA NO considera abiertas, dentro de la foundation:
 - procesamiento background: Celery desde V1;
 - pipeline canónico por etapas;
 - InfoJobs como primera fuente de producción;
-- hard filters antes de scoring;
+- filtros duros antes del scoring;
 - score por reglas antes de LLM;
-- umbral Telegram >= 70 y bandas `buena` / `prioritaria`;
+- umbral de Telegram >= 70 y bandas `buena` / `prioritaria`;
 - retención por clase de dato;
 - degradación empezando por recruiter chat;
 - observabilidad mínima y baseline de superficie protegida.
 
-Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futuras salvo cambio explícito de strategy.
+Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futuras salvo cambio explícito de estrategia.
 
 ---
 
-## 3. Reference docs for resolved decisions
+## 3. Documentos de referencia para decisiones resueltas
 
 - `docs/PRD-JobMatchRAG.md`
 - `docs/architecture/system-overview.md`
@@ -49,7 +49,7 @@ Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futur
 
 ---
 
-## 4. Recommended next change
+## 4. Siguiente cambio recomendado
 
 Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment`, `source-ingestion-framework` y `first-source-infojobs` ya cerrados, el foco recomendado hoy es:
 
@@ -57,4 +57,4 @@ Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-align
    - la primera fuente real ya quedó implementada, verificada y archivada;
    - ahora conviene transformar la evidencia raw en entidades canónicas, reglas de deduplicación y republicación consistentes.
 
-La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda sobre recomendaciones históricas de este documento.
+La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda por encima de las recomendaciones históricas de este documento.

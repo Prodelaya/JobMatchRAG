@@ -1,64 +1,64 @@
-# Policies & Controls — JobMatchRAG
+# Políticas y controles — JobMatchRAG
 
-## 1. Purpose
+## 1. Propósito
 
 Este documento fija los guardrails operativos mínimos de V1: retención, backups, degradación, superficie administrativa y baseline de privacidad/seguridad.
 
-No es un runbook detallado. Es la política base que futuras verticales deben obedecer.
+No es un runbook detallado. Es la política base que las verticales futuras deben obedecer.
 
-## 2. Retention Policy by Data Class
+## 2. Política de retención por clase de dato
 
 La foundation define retención diferenciada, no un TTL único para todo.
 
-| Data class | Retention baseline |
+| Clase de dato | Base mínima de retención |
 |---|---|
 | `RawOfferSnapshot` | 30 días |
-| run logs / trazabilidad operativa | 90 días |
+| logs de run / trazabilidad operativa | 90 días |
 | errores relevantes | 180 días |
 | métricas agregadas | indefinida |
 
-### Retention principles
+### Principios de retención
 
-- se conserva lo suficiente para auditar, depurar y recuperar operación;
+- se conserva lo suficiente para auditar, depurar y recuperar la operación;
 - no se guarda “todo para siempre” por comodidad;
 - cada limpieza debe respetar la clase de dato, no barrer a ciegas;
 - borrar datos viejos no debe romper métricas agregadas ni trazabilidad mínima.
 
-## 3. Backup Expectations
+## 3. Expectativas de backup
 
 Los backups deben cubrir la **fuente de verdad operativa** del sistema.
 
-### What backups must support
+### Qué deben soportar los backups
 
 Como mínimo, deben permitir:
 
 - recuperar estado operativo sin depender solo de recomputación;
 - restaurar histórico relevante de runs y decisiones;
-- sostener continuidad de dashboard, scoring y operación básica tras incidente.
+- sostener continuidad de dashboard, scoring y operación básica tras un incidente.
 
-### Backup boundary
+### Boundary de backup
 
-La foundation NO cierra todavía frecuencia exacta, tecnología ni RTO/RPO detallados. Pero sí cierra algo más importante: confiar solo en “lo recalculamos después” NO alcanza.
+La foundation todavía NO cierra la frecuencia exacta, la tecnología ni RTO/RPO detallados. Pero sí cierra algo más importante: confiar solo en “lo recalculamos después” NO alcanza.
 
-## 4. Graceful Degradation Order
+## 4. Orden de degradación controlada
 
 Cuando el sistema enfrente presión de coste o fiabilidad, la degradación debe empezar por la capacidad menos crítica para la utilidad central.
 
-### Required degradation order
+### Orden de degradación requerido
 
 1. recruiter chat;
 2. capacidades accesorias ligadas al chat;
 3. solo después, si hiciera falta, componentes core de operación.
 
-### Protection rule
+### Regla de protección
 
 La ingesta, el scoring, el dashboard y Telegram son parte del valor principal del producto. Por eso NO deben caer antes que recruiter chat.
 
-## 5. Admin-Only Operations
+## 5. Operaciones solo de admin
 
 Las acciones operativas internas pertenecen a una superficie protegida y separada de lo público.
 
-### Admin-only baseline operations
+### Operaciones baseline solo para admin
 
 Entre las operaciones que deben quedar detrás de esa barrera están:
 
@@ -67,14 +67,14 @@ Entre las operaciones que deben quedar detrás de esa barrera están:
 - disparar tareas de mantenimiento u operación;
 - futuras acciones sobre corpus, umbrales o configuración sensible.
 
-### Surface separation rules
+### Reglas de separación de superficies
 
-- la UI o rutas públicas no ejecutan acciones administrativas;
+- la UI o las rutas públicas no ejecutan acciones administrativas;
 - el acceso admin debe ser dedicado;
 - la superficie debe ser **MFA-ready**;
 - las rutas protegidas no se mezclan con la experiencia pública de portfolio.
 
-## 6. Source-ingestion guardrails baseline
+## 6. Base mínima de guardrails para `source-ingestion`
 
 El framework común de ingesta debe aplicar guardrails operativos por defecto antes de cualquier adapter concreto:
 
@@ -83,14 +83,14 @@ El framework común de ingesta debe aplicar guardrails operativos por defecto an
 - cierre explícito `partial` cuando hubo material usable pero el run terminó degradado;
 - ejecución rate-limit-aware que registre observaciones del límite encontrado.
 
-### Guardrail policy intent
+### Intención de la política de guardrails
 
-- los límites existen para contener riesgo operativo, no para imponer thresholds mágicos de proveedor;
-- una política retryable NO autoriza reintentos infinitos;
+- los límites existen para contener riesgo operativo, no para imponer umbrales mágicos del proveedor;
+- una política `retryable` NO autoriza reintentos infinitos;
 - un run degradado debe seguir siendo auditable aunque entregue material usable;
-- los thresholds finos de backoff/cadencia siguen abiertos para verticales operativas posteriores.
+- los umbrales finos de backoff/cadencia siguen abiertos para verticales operativas posteriores.
 
-## 7. Privacy and Security Baseline
+## 7. Base mínima de privacidad y seguridad
 
 La foundation fija una política base prudente:
 
@@ -100,7 +100,7 @@ La foundation fija una política base prudente:
 - conservación de trazabilidad operativa relevante;
 - reducción de exposición innecesaria de internals hacia la superficie pública.
 
-### Public/private disclosure rule
+### Regla de disclosure público/privado
 
 La transparencia pública del sistema es valiosa, pero no justifica exponer:
 
@@ -109,24 +109,24 @@ La transparencia pública del sistema es valiosa, pero no justifica exponer:
 - controles administrativos;
 - señales que faciliten abuso o interpretación incorrecta del sistema.
 
-## 8. Policy Relationship with Other Foundation Docs
+## 8. Relación de políticas con otros documentos foundation
 
 Este documento depende y complementa a:
 
 - `docs/architecture/system-overview.md` para boundaries público/protegido;
 - `docs/architecture/ingestion-and-sources.md` para trazabilidad de runs y errores;
-- `docs/architecture/scoring-foundation.md` para prioridad del core de matching sobre capacidades secundarias;
+- `docs/architecture/scoring-foundation.md` para la prioridad del core de matching sobre capacidades secundarias;
 - `docs/PRD-JobMatchRAG.md` para la degradación del recruiter chat antes del core.
 
-## 9. Boundaries for Future Vertical Changes
+## 9. Boundaries para cambios verticales futuros
 
 Las siguientes verticales deben implementar sin reabrir estas reglas:
 
 - retención por clase de dato con ventanas ya cerradas;
 - backups sobre la fuente de verdad operativa;
 - degradación comenzando por recruiter chat;
-- operaciones internas detrás de superficie admin dedicada;
-- guardrails de ingesta con retries acotados, bounded scope y cierre `partial` explícito;
-- baseline de privacidad/seguridad alineada con exposición pública limitada.
+- operaciones internas detrás de una superficie admin dedicada;
+- guardrails de ingesta con retries acotados, alcance limitado y cierre `partial` explícito;
+- base mínima de privacidad/seguridad alineada con exposición pública limitada.
 
 El detalle técnico operativo adicional debe expandir esta base sin reabrirla, tomando `docs/operations/observability-and-security.md` como referencia para métricas, alertas, audit trail y controles de superficie protegida.

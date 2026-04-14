@@ -1,26 +1,26 @@
-# Observability & Security Baseline — JobMatchRAG
+# Base mínima de observabilidad y seguridad — JobMatchRAG
 
-## 1. Purpose
+## 1. Propósito
 
 Este documento fija el baseline mínimo de observabilidad y protección operativa para V1.
 
 No define tooling, vendor ni runbooks exhaustivos. Define QUÉ debe poder verse, alertarse y protegerse para operar el sistema sin adivinar.
 
-## 2. Operational Visibility Baseline
+## 2. Base mínima de visibilidad operativa
 
 La foundation exige visibilidad mínima sobre:
 
 - runs de fuentes;
 - errores relevantes y su clasificación;
-- publicación y alertas Telegram;
+- publicación y alertas de Telegram;
 - uso y coste de capacidades LLM/chat;
 - accesos y acciones sobre la superficie protegida.
 
 La idea es simple: si el sistema falla, degrada o se usa de forma anómala, eso debe quedar visible sin depender de inspección manual ad hoc.
 
-## 3. Minimum Metrics by Capability
+## 3. Métricas mínimas por capacidad
 
-### 3.1 Ingestion and run health
+### 3.1 Ingesta y salud de los runs
 
 Como mínimo, la operación debe poder observar:
 
@@ -28,20 +28,20 @@ Como mínimo, la operación debe poder observar:
 - duración por run y por fuente;
 - volumen capturado por run;
 - checkpoints de entrada/salida cuando existan;
-- capabilities snapshot y filter intent aplicado por run;
-- errores `retryable` vs `terminal`;
+- snapshot de capabilities y filter intent aplicado por run;
+- errores `retryable` frente a `terminal`;
 - retries ejecutados y agotados.
 
-### 3.2 Matching, publication and notifications
+### 3.2 Matching, publicación y notificaciones
 
 La operación debe poder ver, como mínimo:
 
 - ofertas que pasaron o fallaron `eligibility`;
-- distribución básica de score final;
+- distribución básica del score final;
 - oportunidades nuevas publicadas;
-- alertas Telegram enviadas, fallidas o suprimidas por duplicación.
+- alertas de Telegram enviadas, fallidas o suprimidas por duplicación.
 
-### 3.3 Recruiter chat and LLM usage
+### 3.3 Recruiter chat y uso de LLM
 
 Aunque recruiter chat sea secundario, su coste y salud deben ser visibles:
 
@@ -50,7 +50,7 @@ Aunque recruiter chat sea secundario, su coste y salud deben ser visibles:
 - errores de retrieval o generación;
 - consumo/coste agregado de uso LLM/chat.
 
-## 4. Alert Signals Baseline
+## 4. Base mínima de señales de alerta
 
 La foundation deja cerradas señales mínimas de alerta, aunque los umbrales exactos se definan en verticales posteriores.
 
@@ -62,14 +62,14 @@ Se deben poder activar alertas cuando ocurra alguna de estas condiciones:
 - recruiter chat/LLM supera presión de coste o fiabilidad;
 - la superficie protegida recibe accesos fallidos o actividad anómala.
 
-## 5. Audit Trail Expectations
+## 5. Expectativas de audit trail
 
 El sistema debe conservar un rastro auditable suficiente para responder:
 
 - qué fuente o acción se ejecutó;
 - quién o qué disparó la operación;
 - cuándo empezó y terminó;
-- qué capacidades y filtros source-side se declararon/intentarion;
+- qué capabilities y filtros del lado de la fuente se declararon/intentarion;
 - con qué estado cerró;
 - qué checkpoint y observaciones de rate limit dejó;
 - qué errores relevantes ocurrieron;
@@ -78,9 +78,9 @@ El sistema debe conservar un rastro auditable suficiente para responder:
 
 La trazabilidad no es opcional: sin eso no hay operación seria ni debugging confiable.
 
-## 6. Protected-Surface Controls
+## 6. Controles de superficie protegida
 
-### 6.1 Admin boundary
+### 6.1 Boundary de admin
 
 Las acciones protegidas siguen estas reglas base:
 
@@ -89,7 +89,7 @@ Las acciones protegidas siguen estas reglas base:
 - acceso solo a operaciones internas, nunca mezcladas con la experiencia pública;
 - registro de intentos y acciones administrativas relevantes.
 
-### 6.2 Public/chat abuse baseline
+### 6.2 Base mínima frente a abuso público/chat
 
 La foundation también deja cerrada una protección mínima sobre superficies expuestas:
 
@@ -97,9 +97,9 @@ La foundation también deja cerrada una protección mínima sobre superficies ex
 - rechazo explícito cuando una consulta excede guardrails o sale del corpus permitido;
 - visibilidad de rechazos, errores y abuso potencial sin exponer detalles sensibles públicamente.
 
-El detalle fino de prompt-injection, thresholds exactos o políticas avanzadas vendrá después. El baseline mínimo ya queda fijado.
+El detalle fino de prompt-injection, umbrales exactos o políticas avanzadas vendrá después. La base mínima ya queda fijada.
 
-## 7. Run and Error Visibility Rules
+## 7. Reglas de visibilidad de runs y errores
 
 La operación debe poder seguir un run de punta a punta sin inspeccionar tablas crudas a ciegas.
 
@@ -110,12 +110,12 @@ Eso implica que la visibilidad mínima debe distinguir:
 - estado final del run;
 - etapa donde ocurrió el fallo;
 - clase del error (`retryable` o `terminal`);
-- retries agotados, checkpoints y rate-limit observations relevantes;
-- impacto visible posterior: sin publicación, con publicación o con alerta Telegram.
+- retries agotados, checkpoints y observaciones relevantes de rate limit;
+- impacto visible posterior: sin publicación, con publicación o con alerta de Telegram.
 
 Los errores relevantes se conservan según la política de retención aceptada y deben quedar suficientemente contextualizados para diagnóstico posterior.
 
-## 8. Public vs Internal Disclosure
+## 8. Disclosure público vs interno
 
 La observabilidad completa es interna. La superficie pública solo debe mostrar señales generales de frescura/actividad.
 
@@ -126,7 +126,7 @@ No corresponde exponer públicamente:
 - internals de seguridad o abuso;
 - razones detalladas que faciliten explotación o interpretación incorrecta.
 
-## 9. Relationship with the Foundation Pack
+## 9. Relación con el foundation pack
 
 Este documento complementa a:
 
@@ -135,13 +135,13 @@ Este documento complementa a:
 - `docs/operations/policies-and-controls.md` para retención, backups, degradación y política base de seguridad;
 - `docs/product/recruiter-chat.md` para el carácter secundario del chat y sus límites de corpus.
 
-## 10. What Future Vertical Changes Must Reuse
+## 10. Qué deben reutilizar los cambios verticales futuros
 
 Las próximas verticales deben reutilizar esta base sin reabrirla:
 
-- observabilidad mínima de runs, errores, alertas y uso LLM/chat;
+- observabilidad mínima de runs, errores, alertas y uso de LLM/chat;
 - señales de alerta para salud, coste y abuso;
 - audit trail suficiente de acciones administrativas y resultados operativos;
 - controles explícitos sobre la superficie protegida y las superficies públicas expuestas.
 
-Los verticales posteriores decidirán tooling, thresholds exactos, dashboards internos y automatización fina, pero SOBRE esta foundation.
+Los verticales posteriores decidirán tooling, umbrales exactos, dashboards internos y automatización fina, pero SOBRE esta foundation.

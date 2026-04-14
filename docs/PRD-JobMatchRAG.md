@@ -86,7 +86,7 @@ El sistema debe responder dos preguntas simples:
 
 El dashboard es público y representa la salida visible del flujo principal. Debe mostrar ofertas ya evaluadas para lectura simple, con foco en utilidad y transparencia general del sistema.
 
-### 5.2 Freshness y visibilidad
+### 5.2 Frescura y visibilidad
 
 - la vista pública debe dejar clara la **frescura** de los datos;
 - la experiencia por defecto debe priorizar actividad reciente;
@@ -143,7 +143,7 @@ El sistema debe priorizar:
 - forma del sistema: **modular monolith**;
 - admin y operaciones protegidas, separadas de rutas públicas;
 - retención diferenciada por clase de dato, no un único TTL global;
-- observabilidad mínima sobre runs, fallos, alertas y uso LLM/chat.
+- observabilidad mínima sobre runs, fallos, alertas y uso de LLM/chat.
 
 ---
 

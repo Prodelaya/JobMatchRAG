@@ -1,63 +1,63 @@
 # AGENTS.md
 
-## Project context
+## Contexto del proyecto
 
-JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repository uses living documentation as source of truth. The foundation pack is already closed; archived docs are historical reference only.
+JobMatchRAG es un sistema personal de inteligencia de empleo para Pablo Laya. Este repositorio usa documentación viva como fuente de verdad. El foundation pack ya está cerrado; los documentos archivados son solo referencia histórica.
 
-## Source-of-truth docs
+## Documentos fuente de verdad
 
-| File | Purpose | Update when... |
+| Archivo | Propósito | Actualizar cuando... |
 | --- | --- | --- |
-| `docs/PRD-JobMatchRAG.md` | Product framing, V1 scope, public visibility, Telegram baseline, recruiter-chat role | product scope, audience, visibility, or core promise changes |
-| `docs/architecture/system-overview.md` | System shape, boundaries, canonical pipeline, module map | architecture boundaries or pipeline stages change |
-| `docs/architecture/domain-data-overview.md` | Core entities, lifecycle, canonicalization/republication rules, evidence model | domain model or lifecycle rules change |
-| `docs/architecture/ingestion-and-sources.md` | Source contract, onboarding policy, run/error model | source framework or ingestion governance changes |
-| `docs/sources/infojobs-api-reference.md` | Provider-specific reference for InfoJobs auth, endpoints, dictionaries, errors, and ingestion-relevant API behavior | InfoJobs integration assumptions, useful endpoints, or provider-specific operational notes change |
-| `docs/architecture/scoring-foundation.md` | Hard filters, scoring flow, thresholds, explainability contract | scoring rules, thresholds, or LLM adjustment policy changes |
-| `docs/architecture/vertical-roadmap.md` | Recommended order of vertical changes, dependencies, and sequencing rules | roadmap order, dependencies, or change decomposition changes |
-| `docs/operations/policies-and-controls.md` | Retention, backups, degradation order, admin policy | operational controls or retention rules change |
-| `docs/operations/observability-and-security.md` | Metrics, alerts, auditability, protected-surface controls | observability/security baseline changes |
-| `docs/product/recruiter-chat.md` | Recruiter-chat purpose, limits, allowed scope | recruiter-chat behavior or boundaries change |
-| `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` | Real pending decisions only | a pending item is resolved or a new real open question appears |
+| `docs/PRD-JobMatchRAG.md` | Framing del producto, alcance de V1, visibilidad pública, baseline de Telegram, rol del recruiter chat | cambien el alcance del producto, la audiencia, la visibilidad o la promesa central |
+| `docs/architecture/system-overview.md` | Forma del sistema, boundaries, pipeline canónico, mapa de módulos | cambien los boundaries de arquitectura o las etapas del pipeline |
+| `docs/architecture/domain-data-overview.md` | Entidades core, lifecycle, reglas de canonicalización/republicación, modelo de evidencia | cambie el modelo de dominio o las reglas de lifecycle |
+| `docs/architecture/ingestion-and-sources.md` | Contrato de fuentes, política de onboarding, modelo de runs/errores | cambien el framework de fuentes o la gobernanza de ingesta |
+| `docs/sources/infojobs-api-reference.md` | Referencia específica del proveedor para auth de InfoJobs, endpoints, diccionarios, errores y comportamiento de API relevante para ingesta | cambien los supuestos de integración con InfoJobs, endpoints útiles o notas operativas específicas del proveedor |
+| `docs/architecture/scoring-foundation.md` | Filtros duros, flujo de scoring, umbrales, contrato de explicabilidad | cambien las reglas de scoring, umbrales o la política de ajuste LLM |
+| `docs/architecture/vertical-roadmap.md` | Orden recomendado de cambios verticales, dependencias y reglas de secuencia | cambien el orden del roadmap, las dependencias o la descomposición de cambios |
+| `docs/operations/policies-and-controls.md` | Retención, backups, orden de degradación, política administrativa | cambien los controles operativos o las reglas de retención |
+| `docs/operations/observability-and-security.md` | Métricas, alertas, auditabilidad, controles de superficie protegida | cambie el baseline de observabilidad/seguridad |
+| `docs/product/recruiter-chat.md` | Propósito, límites y alcance permitido del recruiter chat | cambie el comportamiento o los boundaries del recruiter chat |
+| `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` | Solo decisiones realmente pendientes | se resuelva un pendiente o aparezca una nueva pregunta abierta real |
 
-## Continuous update rule
+## Regla de actualización continua
 
-If a change modifies a documented decision, contract, policy, threshold, boundary, or flow, update the corresponding living document in the same change. If that cannot happen, leave an explicit blocking follow-up instead of letting docs drift.
+Si un cambio modifica una decisión documentada, contrato, política, umbral, boundary o flujo, actualizá el documento vivo correspondiente dentro del mismo cambio. Si eso no puede pasar, dejá un seguimiento bloqueante explícito en vez de permitir que la documentación derive.
 
-After each important change, run a full-project `judgment-day` review before considering the work closed. Treat that review as mandatory final validation, not as an optional extra.
+Después de cada cambio importante, ejecutá una review `judgment-day` de todo el proyecto antes de considerar el trabajo cerrado. Tratá esa review como validación final obligatoria, no como un extra opcional.
 
-Before opening a new change, clarify the specific gaps of that vertical; if real decisions are still missing, do a brief discovery round before proposal/spec.
+Antes de abrir un cambio nuevo, aclarà los huecos específicos de ese vertical; si todavía faltan decisiones reales, hacé una ronda breve de discovery antes de propuesta/spec.
 
-When a change starts, finishes, splits, or changes the recommended sequence, update `docs/architecture/vertical-roadmap.md` in the same change so the current status and next recommended change stay visible.
+Cuando un cambio empieza, termina, se divide o modifica la secuencia recomendada, actualizá `docs/architecture/vertical-roadmap.md` en el mismo cambio para que el estado actual y el siguiente cambio recomendado sigan visibles.
 
-When a pending decision is resolved or a supposed open question is no longer real, update `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` in the same change so it stays limited to true pending items only.
+Cuando una decisión pendiente se resuelve o una supuesta pregunta abierta deja de ser real, actualizá `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` en el mismo cambio para que quede limitado solo a pendientes verdaderos.
 
-If a change creates, replaces, or archives a source-of-truth document, update the living-doc index in `AGENTS.md` in the same change.
+Si un cambio crea, reemplaza o archiva un documento fuente de verdad, actualizá el índice de documentación viva en `AGENTS.md` dentro del mismo cambio.
 
-Before closing a change, explicitly review whether `docs/PRD-JobMatchRAG.md`, architecture docs, operations docs, `docs/architecture/vertical-roadmap.md`, or `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` need updates; if yes, update them in the same change.
+Antes de cerrar un cambio, revisá explícitamente si `docs/PRD-JobMatchRAG.md`, los documentos de arquitectura, los documentos de operaciones, `docs/architecture/vertical-roadmap.md` o `docs/Open-Questions-Architecture-Decisions-JobMatchRAG.md` necesitan actualización; si la necesitan, actualizalos en el mismo cambio.
 
-## Local verification
+## Verificación local
 
-Recommended local bootstrap:
+Bootstrap local recomendado:
 
 - `uv venv .venv`
 - `uv pip install -e .[dev]`
 
-This recommended local bootstrap preserves the existing `.venv/bin/python -m ...` verification contract.
-It does not adopt `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime, or functional scope changes.
+Este bootstrap local recomendado preserva el contrato existente de verificación `.venv/bin/python -m ...`.
+No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance funcional.
 
 - `.venv/bin/python -m ruff check .`
 - `.venv/bin/python -m mypy src`
 - `.venv/bin/python -m pytest`
 
-## External docs
+## Documentación externa
 
-- For external library or framework documentation, verify first with Context7 via MCP before assuming APIs or behavior; if Context7 is unavailable or insufficient, use the official docs.
-- Useful Context7 flow: resolve the library ID first, then query docs. Likely useful libraries here include FastAPI, Celery, Next.js, and Vercel AI SDK if those stacks are adopted.
+- Para documentación externa de librerías o frameworks, verificá primero con Context7 vía MCP antes de asumir APIs o comportamientos; si Context7 no está disponible o no alcanza, usá la documentación oficial.
+- Flujo útil con Context7: resolvé primero el ID de la librería y después consultá la documentación. Las librerías más probables acá incluyen FastAPI, Celery, Next.js y Vercel AI SDK si esos stacks se adoptan.
 
-## Do not
+## No hacer
 
-- Do not use archived docs as source of truth.
-- Do not reopen closed foundations without an explicit new change.
-- Do not leave living docs outdated after changing the system.
-- Do not expand small changes with unrelated scope.
+- No usar documentos archivados como fuente de verdad.
+- No reabrir foundations cerradas sin un cambio nuevo explícito.
+- No dejar la documentación viva desactualizada después de cambiar el sistema.
+- No expandir cambios chicos con alcance no relacionado.

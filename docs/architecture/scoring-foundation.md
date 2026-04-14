@@ -1,12 +1,12 @@
-# Scoring Foundation — JobMatchRAG
+# Foundation de scoring — JobMatchRAG
 
-## 1. Purpose
+## 1. Propósito
 
 Este documento define la base de matching/scoring de V1. La idea es SIMPLE: primero excluir lo claramente incompatible, después puntuar con reglas auditables y recién al final permitir un ajuste LLM acotado.
 
-No cierra todavía una fórmula numérica detallada ni datasets de calibración fina. Cierra el ORDEN, los límites y el contrato de explicabilidad.
+Todavía no cierra una fórmula numérica detallada ni datasets de calibración fina. Sí cierra el ORDEN, los límites y el contrato de explicabilidad.
 
-## 2. Decision Order
+## 2. Orden de decisión
 
 El flujo base de scoring es:
 
@@ -19,11 +19,11 @@ Esto implica cuatro reglas no negociables:
 3. el LLM nunca reemplaza el score base;
 4. la salida final debe seguir siendo explicable.
 
-## 3. Eligibility Gates (Hard Filters)
+## 3. Gates de elegibilidad (filtros duros)
 
 Antes de puntuar, el sistema debe descartar incompatibilidades claras.
 
-### 3.1 Baseline hard filters
+### 3.1 Base mínima de filtros duros
 
 Las causas mínimas de exclusión cerradas para esta foundation son:
 
@@ -32,20 +32,20 @@ Las causas mínimas de exclusión cerradas para esta foundation son:
 - roles incompatibles con el foco real del producto;
 - consultoras, salvo que exista evidencia clara de trabajo interno real.
 
-### 3.2 Meaning of hard filters
+### 3.2 Significado de los filtros duros
 
-Los hard filters existen para evitar dos errores clásicos:
+Los filtros duros existen para evitar dos errores clásicos:
 
 - gastar coste analítico en ofertas que ya sabemos que no encajan;
 - dejar que un score “bonito” tape una incompatibilidad estructural.
 
 Si falla elegibilidad, la oferta queda fuera del scoring pero mantiene trazabilidad histórica interna con sus razones.
 
-## 4. Rule-Score Baseline
+## 4. Base mínima de score por reglas
 
 La primera capa positiva de matching es un `ScoreBreakdown` por reglas.
 
-### 4.1 What the rule score must capture
+### 4.1 Qué debe capturar el score por reglas
 
 La capa de reglas debe poder representar, como mínimo:
 
@@ -55,7 +55,7 @@ La capa de reglas debe poder representar, como mínimo:
 - señales complementarias de stack/lenguaje sin volverlas dominantes;
 - razones positivas y negativas auditables.
 
-### 4.2 Evidence hierarchy
+### 4.2 Jerarquía de evidencia
 
 La foundation fija una prioridad clave:
 
@@ -65,83 +65,83 @@ Eso significa que:
 
 - una mención directa pesa más que una deducción débil;
 - la inferencia puede ayudar, pero no sobreescribir hechos claros;
-- el sistema debe resistir el entusiasmo artificial por texto ambiguo.
+- el sistema debe resistir el entusiasmo artificial frente a texto ambiguo.
 
-## 5. Bounded LLM Adjustment
+## 5. Ajuste LLM acotado
 
 El LLM entra, si entra, como segunda capa controlada.
 
-### 5.1 Allowed role
+### 5.1 Rol permitido
 
 El ajuste LLM sirve para:
 
 - refinar ambigüedades semánticas;
 - sumar o restar un delta limitado sobre el score base;
-- mejorar matching sin convertir el sistema en una caja negra.
+- mejorar el matching sin convertir el sistema en una caja negra.
 
-### 5.2 Forbidden role
+### 5.2 Rol prohibido
 
 El LLM NO debe:
 
-- rescatar ofertas rechazadas por hard filters;
+- rescatar ofertas rechazadas por filtros duros;
 - reemplazar la fórmula de reglas;
 - inventar evidencia inexistente;
 - producir un score final imposible de auditar.
 
 En otras palabras: el LLM puede corregir un borde, no mover los cimientos del edificio.
 
-## 6. Final Thresholds and Labels
+## 6. Umbrales y etiquetas finales
 
 La foundation deja cerrados estos umbrales operativos:
 
-| Range / event | Meaning |
+| Rango / evento | Significado |
 |---|---|
-| `< 70` | no califica para alerta Telegram |
+| `< 70` | no califica para alerta de Telegram |
 | `70-84` | categoría `buena` |
 | `85-100` | categoría `prioritaria` |
-| `>= 70` y nueva oportunidad | habilita alerta Telegram |
+| `>= 70` y nueva oportunidad | habilita alerta de Telegram |
 
-### Threshold rules
+### Reglas de umbral
 
 - Telegram solo se dispara para **nuevas** oportunidades;
 - el score no implica publicación pública automática si la oferta no pasó el flujo previo;
 - `prioritaria` expresa mayor urgencia/encaje, no certeza absoluta.
 
-## 7. Explainability Contract
+## 7. Contrato de explicabilidad
 
 Toda salida de scoring debe poder explicarse con un contrato mínimo.
 
-### Minimum explainability payload
+### Payload mínimo de explicabilidad
 
 Sin fijar todavía el schema físico, el sistema debe poder responder:
 
-- qué hard filters corrieron y cuáles aplicaron;
+- qué filtros duros corrieron y cuáles aplicaron;
 - qué razones positivas impulsaron el score;
 - qué razones negativas lo limitaron;
-- qué señales fueron explícitas vs inferidas;
+- qué señales fueron explícitas frente a inferidas;
 - si hubo `LLMAdjustment`, qué delta aplicó y sobre qué base;
 - por qué la oferta terminó como no alertable, `buena` o `prioritaria`.
 
-### Explainability boundary
+### Boundary de explicabilidad
 
-La explicabilidad cerrada aquí es principalmente interna/operativa. La superficie pública puede exponer solo un resumen suficiente, sin abrir internals sensibles ni red flags completas.
+La explicabilidad cerrada acá es principalmente interna/operativa. La superficie pública puede exponer solo un resumen suficiente, sin abrir internals sensibles ni red flags completas.
 
-## 8. Publication Relationship
+## 8. Relación con la publicación
 
 Scoring y publicación están conectados, pero no son lo mismo.
 
 - scoring determina elegibilidad de valor y prioridad;
-- publication usa ese resultado para proyectar al dashboard;
-- Telegram depende de novedad + threshold;
+- publicación usa ese resultado para proyectar al dashboard;
+- Telegram depende de novedad + umbral;
 - el dashboard público consume proyecciones ya calculadas, no lógica viva de scoring.
 
-## 9. Boundaries for Future Vertical Changes
+## 9. Boundaries para cambios verticales futuros
 
 Todo vertical posterior debe respetar estas decisiones:
 
-- hard filters antes de todo score;
+- filtros duros antes de todo score;
 - score por reglas antes de LLM;
-- evidencia explícita sobre inferida;
+- evidencia explícita por encima de la inferida;
 - `buena` = 70-84;
 - `prioritaria` = 85-100;
 - Telegram desde 70 solo para nuevas oportunidades;
