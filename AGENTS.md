@@ -12,6 +12,7 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repositor
 | `docs/architecture/system-overview.md` | System shape, boundaries, canonical pipeline, module map | architecture boundaries or pipeline stages change |
 | `docs/architecture/domain-data-overview.md` | Core entities, lifecycle, canonicalization/republication rules, evidence model | domain model or lifecycle rules change |
 | `docs/architecture/ingestion-and-sources.md` | Source contract, onboarding policy, run/error model | source framework or ingestion governance changes |
+| `docs/sources/infojobs-api-reference.md` | Provider-specific reference for InfoJobs auth, endpoints, dictionaries, errors, and ingestion-relevant API behavior | InfoJobs integration assumptions, useful endpoints, or provider-specific operational notes change |
 | `docs/architecture/scoring-foundation.md` | Hard filters, scoring flow, thresholds, explainability contract | scoring rules, thresholds, or LLM adjustment policy changes |
 | `docs/architecture/vertical-roadmap.md` | Recommended order of vertical changes, dependencies, and sequencing rules | roadmap order, dependencies, or change decomposition changes |
 | `docs/operations/policies-and-controls.md` | Retention, backups, degradation order, admin policy | operational controls or retention rules change |
