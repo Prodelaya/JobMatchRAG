@@ -13,6 +13,7 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repositor
 | `docs/architecture/domain-data-overview.md` | Core entities, lifecycle, canonicalization/republication rules, evidence model | domain model or lifecycle rules change |
 | `docs/architecture/ingestion-and-sources.md` | Source contract, onboarding policy, run/error model | source framework or ingestion governance changes |
 | `docs/architecture/scoring-foundation.md` | Hard filters, scoring flow, thresholds, explainability contract | scoring rules, thresholds, or LLM adjustment policy changes |
+| `docs/architecture/vertical-roadmap.md` | Recommended order of vertical changes, dependencies, and sequencing rules | roadmap order, dependencies, or change decomposition changes |
 | `docs/operations/policies-and-controls.md` | Retention, backups, degradation order, admin policy | operational controls or retention rules change |
 | `docs/operations/observability-and-security.md` | Metrics, alerts, auditability, protected-surface controls | observability/security baseline changes |
 | `docs/product/recruiter-chat.md` | Recruiter-chat purpose, limits, allowed scope | recruiter-chat behavior or boundaries change |
@@ -23,6 +24,8 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repositor
 If a change modifies a documented decision, contract, policy, threshold, boundary, or flow, update the corresponding living document in the same change. If that cannot happen, leave an explicit blocking follow-up instead of letting docs drift.
 
 Before opening a new change, clarify the specific gaps of that vertical; if real decisions are still missing, do a brief discovery round before proposal/spec.
+
+When a change starts, finishes, splits, or changes the recommended sequence, update `docs/architecture/vertical-roadmap.md` in the same change so the current status and next recommended change stay visible.
 
 ## Local verification
 
