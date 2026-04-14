@@ -22,11 +22,18 @@ JobMatchRAG is a personal job-intelligence system for Pablo Laya. This repositor
 
 If a change modifies a documented decision, contract, policy, threshold, boundary, or flow, update the corresponding living document in the same change. If that cannot happen, leave an explicit blocking follow-up instead of letting docs drift.
 
+Before opening a new change, clarify the specific gaps of that vertical; if real decisions are still missing, do a brief discovery round before proposal/spec.
+
 ## Local verification
 
 - `.venv/bin/python -m ruff check .`
 - `.venv/bin/python -m mypy src`
 - `.venv/bin/python -m pytest`
+
+## External docs
+
+- For external library or framework documentation, verify first with Context7 via MCP before assuming APIs or behavior; if Context7 is unavailable or insufficient, use the official docs.
+- Useful Context7 flow: resolve the library ID first, then query docs. Likely useful libraries here include FastAPI, Celery, Next.js, and Vercel AI SDK if those stacks are adopted.
 
 ## Do not
 
