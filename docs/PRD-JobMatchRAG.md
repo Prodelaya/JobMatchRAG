@@ -58,6 +58,7 @@ El sistema debe responder dos preguntas simples:
 ### 4.1 Dentro de alcance
 
 - ingesta de ofertas bajo un contrato común de fuentes;
+- `capture profile` canónica y bilingüe para búsqueda/captura, con pushdown al proveedor solo como optimización;
 - pipeline canónico `source -> raw -> normalized -> canonical -> eligibility -> scored -> published/notified`;
 - filtros de elegibilidad antes del scoring;
 - consolidación de oferta canónica con evidencia por fuente;
@@ -155,7 +156,7 @@ La primera fuente de producción cerrada para V1 es **InfoJobs official API**. O
 
 ### 9.2 Política de filtrado
 
-Se permite filtrar del lado de la fuente para reducir ruido, pero eso no reemplaza la elegibilidad interna: el filtro duro propio sigue siendo la autoridad antes del scoring.
+Se permite filtrar del lado de la fuente para reducir ruido, pero eso no reemplaza la elegibilidad interna: el filtro duro propio sigue siendo la autoridad antes del scoring. En V1 la semántica de búsqueda/captura vive en una `capture profile` canónica; el proveedor recibe params derivados y los filtros no soportados (por ejemplo AVE-friendly hybrid o consultoría/body-shopping) se resuelven post-fetch dentro de JobMatchRAG.
 
 ---
 

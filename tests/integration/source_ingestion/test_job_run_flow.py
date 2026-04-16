@@ -49,6 +49,16 @@ class TraceableFakeAdapter:
         raise AssertionError(f"unexpected error: {error}")
 
 
+class CanonicalBoundaryAdapter(TraceableFakeAdapter):
+    def __init__(self, raw_items: tuple[dict[str, object], ...]) -> None:
+        super().__init__()
+        self._raw_items = raw_items
+
+    def fetch(self, context: FetchContext) -> FetchOutcome:
+        self.seen_contexts.append(context)
+        return FetchOutcome(raw_items=self._raw_items, next_checkpoint="checkpoint-003", exhausted=True)
+
+
 def test_job_run_raw_handoff_keeps_traceability_metadata() -> None:
     adapter = TraceableFakeAdapter()
     orchestrator = IngestionOrchestrator(
@@ -125,3 +135,170 @@ def test_run_filter_snapshot_is_detached_from_later_caller_mutation() -> None:
         "keyword": "python",
         "meta": {"location": "remote"},
     }
+
+
+def test_seeded_city_hybrid_and_known_company_ambiguity_survive_before_downstream_handoff() -> None:
+    adapter = CanonicalBoundaryAdapter(
+        raw_items=(
+            {
+                "id": "offer-seeded-city",
+                "title": "Automation Engineer",
+                "modality": "hybrid",
+                "city": "Barcelona",
+                "country": "Spain",
+                "attendance_days_per_month": 2,
+            },
+            {
+                "id": "offer-known-company",
+                "title": "Internal Automation Engineer",
+                "description": "Plataforma interna para operaciones.",
+                "company": "Accenture",
+                "modality": "remote",
+                "country": "Spain",
+            },
+        )
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        IngestionJob(job_id="job-canonical-1", source_key="traceable-source"),
+        adapter,
+    )
+
+    assert [item["id"] for item in result.raw_handoff] == ["offer-seeded-city", "offer-known-company"]
+    assert result.run.canonical_trace is not None
+    assert result.run.canonical_trace.dataset_snapshots[0].dataset_version == "2026.04.1"
+    assert [snapshot.decision for snapshot in result.run.canonical_trace.offer_outcomes] == ["passed", "ambiguous"]
+
+
+def test_explicit_consultancy_exclusion_happens_before_later_handoff() -> None:
+    adapter = CanonicalBoundaryAdapter(
+        raw_items=(
+            {
+                "id": "offer-explicit-consultancy",
+                "title": "Consultor IA",
+                "description": "Consultora para proyectos de clientes y staffing.",
+                "company": "Delivery Partner",
+                "modality": "remote",
+                "country": "Spain",
+            },
+            {
+                "id": "offer-survivor",
+                "title": "Automation Engineer",
+                "modality": "remote",
+                "country": "Spain",
+            },
+        )
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        IngestionJob(job_id="job-canonical-2", source_key="traceable-source"),
+        adapter,
+    )
+
+    assert [item["id"] for item in result.raw_handoff] == ["offer-survivor"]
+    assert result.run.counters.raw_items_seen == 2
+    assert result.run.counters.raw_items_forwarded == 1
+    assert [snapshot.decision for snapshot in result.run.canonical_trace.offer_outcomes] == ["excluded", "passed"]
+
+
+def test_ai_preference_remains_downstream_ranking_only_behavior() -> None:
+    adapter = CanonicalBoundaryAdapter(
+        raw_items=(
+            {
+                "id": "offer-ai",
+                "title": "AI Automation Engineer",
+                "description": "Internal platform automation with LLM tooling.",
+                "modality": "remote",
+                "country": "Spain",
+            },
+            {
+                "id": "offer-no-ai",
+                "title": "Automation Engineer",
+                "description": "Internal platform automation for operations.",
+                "modality": "remote",
+                "country": "Spain",
+            },
+        )
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        IngestionJob(job_id="job-canonical-3", source_key="traceable-source"),
+        adapter,
+    )
+
+    assert [item["id"] for item in result.raw_handoff] == ["offer-ai", "offer-no-ai"]
+    assert [snapshot.decision for snapshot in result.run.canonical_trace.offer_outcomes] == ["passed", "passed"]
+
+
+def test_framework_excludes_ineligible_item_when_provider_filters_miss_it() -> None:
+    adapter = CanonicalBoundaryAdapter(
+        raw_items=(
+            {
+                "id": "offer-senior",
+                "title": "Senior Automation Engineer",
+                "description": "Internal platform automation role.",
+                "modality": "remote",
+                "country": "Spain",
+            },
+            {
+                "id": "offer-stale",
+                "title": "Automation Engineer",
+                "description": "Internal platform automation role.",
+                "modality": "remote",
+                "country": "Spain",
+                "published_at": "2026-03-20T10:00:00+00:00",
+                "evaluated_at": "2026-04-16T10:00:00+00:00",
+            },
+            {
+                "id": "offer-survivor",
+                "title": "Automation Engineer",
+                "description": "Internal platform automation role.",
+                "modality": "remote",
+                "country": "Spain",
+                "published_at": "2026-04-12T10:00:00+00:00",
+                "evaluated_at": "2026-04-16T10:00:00+00:00",
+            },
+        )
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        IngestionJob(
+            job_id="job-canonical-4",
+            source_key="traceable-source",
+            filter_intent=FilterIntent(provider_filters={"keyword": "automation", "sinceDate": "_15_DAYS"}),
+        ),
+        adapter,
+    )
+
+    assert [item["id"] for item in result.raw_handoff] == ["offer-survivor"]
+    assert [snapshot.decision for snapshot in result.run.canonical_trace.offer_outcomes] == [
+        "excluded",
+        "excluded",
+        "passed",
+    ]
+
+
+def test_exclusion_only_page_still_advances_checkpoint_without_bounded_partial() -> None:
+    adapter = CanonicalBoundaryAdapter(
+        raw_items=(
+            {
+                "id": "offer-excluded",
+                "title": "Senior Automation Engineer",
+                "description": "Internal platform automation role.",
+                "modality": "remote",
+                "country": "Spain",
+            },
+        )
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        IngestionJob(job_id="job-canonical-5", source_key="traceable-source", checkpoint_in="checkpoint-001"),
+        adapter,
+    )
+
+    assert result.run.status is RunStatus.COMPLETED
+    assert result.run.outcome_reason == "source exhausted"
+    assert result.run.checkpoint_out == "checkpoint-003"
+    assert result.run.counters.raw_items_seen == 1
+    assert result.run.counters.raw_items_forwarded == 0
+    assert result.raw_handoff == ()

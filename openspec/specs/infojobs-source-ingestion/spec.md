@@ -28,13 +28,19 @@ The InfoJobs adapter MUST declare and operate within framework capabilities rath
 
 ### Requirement: Listing-based discovery
 
-The system MUST use `GET /offer` as the primary discovery mechanism for InfoJobs offers. Listing behavior SHALL support paginated retrieval and source-side query/filter parameters that the adapter declares as supported, while preserving the effective listing request context as part of run traceability.
+The system MUST use `GET /offer` as the primary discovery mechanism for InfoJobs offers. Listing behavior SHALL support paginated retrieval and provider parameters derived from the canonical capture profile, while preserving both the canonical target-filter intent and the effective InfoJobs request as part of run traceability. The InfoJobs request MUST remain an execution artifact rather than semantic authority.
 
 #### Scenario: Offers are discovered from InfoJobs
 - GIVEN an InfoJobs ingestion run starts with declared filter intent
 - WHEN discovery executes
 - THEN offers are retrieved from `GET /offer`
 - AND the effective listing query remains auditable for that run
+
+#### Scenario: Derived query stays non-authoritative
+- GIVEN the canonical profile requests bilingual automation families
+- WHEN the adapter emits `q` terms for InfoJobs
+- THEN those terms are recorded as derived params
+- AND semantic authority remains in the canonical profile
 
 ### Requirement: New-offer-only detail enrichment
 
@@ -53,13 +59,19 @@ The system MUST use `GET /offer/{offerId}` only to enrich offers first discovere
 
 ### Requirement: `sinceDate` and source filters are optimization only
 
-The system MAY use InfoJobs source-side filters, including `sinceDate`, to reduce capture volume. These filters MUST remain advisory optimizations only and MUST NOT replace the framework's canonical checkpoint or internal eligibility authority.
+The system MAY use InfoJobs source-side filters, including `q`, geography/modality-related params, and `sinceDate`, to reduce capture volume. These filters MUST remain advisory optimizations only, MUST NOT replace canonical target filters or framework checkpoints, and MUST NOT narrow product semantics beyond the canonical capture profile. Unsupported canonical filters SHALL be applied post-fetch within JobMatchRAG.
 
 #### Scenario: Relative time window is requested
 - GIVEN a run uses `sinceDate`
 - WHEN continuity is evaluated after the run
 - THEN the framework checkpoint remains the canonical continuation record
 - AND `sinceDate` is treated only as source-side narrowing
+
+#### Scenario: Provider cannot encode a canonical rule
+- GIVEN the canonical profile excludes senior roles semantically
+- WHEN InfoJobs lacks an equivalent provider param
+- THEN the adapter captures broadly enough to preserve intent
+- AND seniority exclusion still runs post-fetch
 
 ### Requirement: Best-effort checkpoint semantics only
 

@@ -7,7 +7,7 @@ JobMatchRAG es un sistema personal de inteligencia de empleo para Pablo Laya. Su
 - foundation documental: cerrada
 - bootstrap de tooling Python: cerrado
 - alineación del bootstrap local con `uv + .venv`: cerrada
-- siguiente vertical recomendado: `offer-normalization-canonicalization`
+- siguiente vertical recomendado: abrir `infojobs-search-mapping`
 
 ## Fuente de verdad
 
@@ -20,13 +20,13 @@ El repositorio usa documentación viva como fuente de verdad. Los puntos de entr
 
 ## Bootstrap local recomendado
 
-Usá este flujo mínimo de bootstrap para preparar la `.venv` local:
+Usá este flujo mínimo de bootstrap para prepare the local `.venv` y dejar alineado el entorno recomendado:
 
 1. `uv venv .venv`
 2. `uv pip install -e .[dev]`
 
 Este bootstrap local recomendado preserva el contrato existente de verificación `.venv/bin/python -m ...`.
-No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance funcional.
+No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance functional scope.
 
 ## Verificación local
 

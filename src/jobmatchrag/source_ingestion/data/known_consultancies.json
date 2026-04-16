@@ -1,0 +1,13 @@
+{
+  "dataset_key": "known_consultancies",
+  "dataset_version": "2026.04.1",
+  "seed_source": "manual-provisional-curation",
+  "seeded_at": "2026-04-15",
+  "companies": [
+    {"company_key": "accenture", "canonical_name": "Accenture", "aliases": ["accenture"], "signal_kind": "consultancy", "confidence": "medium", "status": "active"},
+    {"company_key": "capgemini", "canonical_name": "Capgemini", "aliases": ["capgemini"], "signal_kind": "consultancy", "confidence": "medium", "status": "active"},
+    {"company_key": "inetum", "canonical_name": "Inetum", "aliases": ["inetum"], "signal_kind": "consultancy", "confidence": "medium", "status": "active"},
+    {"company_key": "minsait", "canonical_name": "Minsait", "aliases": ["minsait", "indra minsait"], "signal_kind": "consultancy", "confidence": "medium", "status": "active"},
+    {"company_key": "sopra-steria", "canonical_name": "Sopra Steria", "aliases": ["sopra steria"], "signal_kind": "consultancy", "confidence": "medium", "status": "active"}
+  ]
+}

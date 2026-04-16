@@ -30,7 +30,15 @@ Las causas mínimas de exclusión cerradas para esta foundation son:
 - geografía o modalidad incompatibles;
 - seniority por encima de 3 años;
 - roles incompatibles con el foco real del producto;
-- consultoras, salvo que exista evidencia clara de trabajo interno real.
+- consultoras/body-shopping con evidencia explícita o reliable; una lista curada de compañías conocidas solo agrega ambigüedad, no blacklist automática.
+
+La política activa de fuente-search queda así:
+
+- onsite solo Madrid;
+- remote en cualquier punto de España;
+- hybrid en Madrid o fuera de Madrid solo si la asistencia explícita es `< 3 días/mes` y la ciudad aparece en el dataset curado de ciudades con acceso AVE sembrado en repo;
+- frescura >15 días excluye solo cuando la fecha es confiable;
+- los casos ambiguos sobreviven para scoring/explicación, pero las exclusiones explícitas NO llegan a LLM.
 
 ### 3.2 Significado de los filtros duros
 
@@ -84,6 +92,7 @@ El ajuste LLM sirve para:
 El LLM NO debe:
 
 - rescatar ofertas rechazadas por filtros duros;
+- reinterpretar como compatibles ofertas excluidas por filtros canónicos explícitos de geografía, consultoría/body-shopping, seniority o frescura confiable;
 - reemplazar la fórmula de reglas;
 - inventar evidencia inexistente;
 - producir un score final imposible de auditar.

@@ -487,7 +487,151 @@ def test_adapter_mutation_of_nested_requested_filters_does_not_leak_into_run_sna
         "keyword": "python",
         "meta": {"location": "remote"},
     }
-    assert adapter.contexts[0].requested_filters == {
-        "keyword": "golang",
-        "meta": {"location": "onsite"},
+    assert adapter.contexts[0].requested_filters == {"keyword": "golang"}
+
+
+def test_run_captures_canonical_trace_with_dataset_versions_and_pushdown_boundaries() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=(
+                    {
+                        "id": "offer-1",
+                        "title": "Automation Engineer",
+                        "modality": "hybrid",
+                        "city": "Barcelona",
+                        "country": "Spain",
+                        "attendance_days_per_month": 2,
+                    },
+                ),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+    orchestrator = IngestionOrchestrator()
+
+    result = orchestrator.execute_job(build_job(filter_intent=FilterIntent(provider_filters={"keyword": "python", "sinceDate": "_15_DAYS"})), adapter)
+
+    assert result.run.canonical_trace is not None
+    assert result.run.canonical_trace.capture_profile_ref == "source-search-strategy.v1"
+    assert result.run.canonical_trace.execution_plan.derived_provider_params == {
+        "keyword": "python",
     }
+    assert result.run.canonical_trace.execution_plan.pushed_down_filters == ("search_terms",)
+    assert [
+        (mapping.canonical_filter_key, mapping.provider_param)
+        for mapping in result.run.canonical_trace.execution_plan.provider_filter_mappings
+    ] == [("search_terms", "keyword")]
+    assert result.run.canonical_trace.execution_plan.post_fetch_filters == (
+        "geography_modality",
+        "consultancy_body_shopping",
+        "seniority_semantic",
+        "freshness_reliable",
+    )
+    assert result.run.canonical_trace.dataset_snapshots[0].dataset_version == "2026.04.1"
+    assert result.run.canonical_trace.offer_outcomes[0].source_offer_id == "offer-1"
+    assert result.run.canonical_trace.offer_outcomes[0].decision == "passed"
+
+
+def test_context_requested_filters_use_execution_plan_pushdown_params_only() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "offer-1"},),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+
+    result = IngestionOrchestrator().execute_job(
+        build_job(
+            filter_intent=FilterIntent(
+                provider_filters={
+                    "keyword": "python",
+                    "sinceDate": "_15_DAYS",
+                    "consultancy_body_shopping": "explicit_only",
+                }
+            )
+        ),
+        adapter,
+    )
+
+    assert result.run.status is RunStatus.COMPLETED
+    assert adapter.contexts[0].requested_filters == {"keyword": "python"}
+
+
+def test_canonical_exclusions_do_not_fake_budget_truncation_or_block_checkpoint_progress() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=(
+                    {
+                        "id": "offer-excluded",
+                        "title": "Consultor IA",
+                        "description": "Consultora para proyectos de clientes y staffing.",
+                        "modality": "remote",
+                        "country": "Spain",
+                    },
+                    {
+                        "id": "offer-kept",
+                        "title": "Automation Engineer",
+                        "modality": "remote",
+                        "country": "Spain",
+                    },
+                ),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+
+    result = IngestionOrchestrator().execute_job(build_job(checkpoint_in="cp-previous"), adapter)
+
+    assert result.run.status is RunStatus.COMPLETED
+    assert result.run.outcome_reason == "source exhausted"
+    assert result.run.checkpoint_in == "cp-previous"
+    assert result.run.checkpoint_out == "cp-1"
+    assert result.run.counters.raw_items_seen == 2
+    assert result.run.counters.raw_items_forwarded == 1
+    assert result.raw_handoff == ({"id": "offer-kept", "title": "Automation Engineer", "modality": "remote", "country": "Spain"},)
+
+
+def test_excluded_offers_stop_before_downstream_handoff_but_ambiguous_survive() -> None:
+    adapter = FakeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=(
+                    {
+                        "id": "offer-1",
+                        "title": "Automation Engineer",
+                        "description": "Internal platform role.",
+                        "company": "Accenture",
+                        "modality": "remote",
+                        "country": "Spain",
+                    },
+                    {
+                        "id": "offer-2",
+                        "title": "Consultor IA",
+                        "description": "Consultora para proyectos de clientes y staffing.",
+                        "company": "Delivery Partner",
+                        "modality": "remote",
+                        "country": "Spain",
+                    },
+                ),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+
+    result = IngestionOrchestrator().execute_job(build_job(), adapter)
+
+    assert [item["id"] for item in result.raw_handoff] == ["offer-1"]
+    assert result.run.counters.raw_items_seen == 2
+    assert result.run.counters.raw_items_forwarded == 1
+    assert [snapshot.decision for snapshot in result.run.canonical_trace.offer_outcomes] == [
+        "ambiguous",
+        "excluded",
+    ]

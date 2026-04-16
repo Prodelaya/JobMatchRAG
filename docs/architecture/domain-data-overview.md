@@ -28,7 +28,7 @@ El pipeline del dominio sigue esta secuencia:
 
 ### 3.1 `source`
 
-Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job -> run`. Ese run tiene contexto, timestamps, estado, counters, checkpoints, snapshot de capabilities/filter intent y errores clasificados.
+Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job -> run`. Ese run tiene contexto, timestamps, estado, counters, checkpoints, snapshot de capabilities/filter intent, errores clasificados y una traza canónica separada del request derivado al proveedor.
 
 ### 3.2 `raw`
 
@@ -46,7 +46,7 @@ Las normalizadas equivalentes se consolidan en una sola `CanonicalOffer`, acompa
 
 ### 3.5 `eligibility`
 
-Sobre la oferta canónica corren filtros duros. Si falla, el sistema conserva la decisión y sus razones; si pasa, habilita scoring.
+Sobre la oferta canónica corren filtros duros. Si falla, el sistema conserva la decisión y sus razones; si pasa o queda ambigua, habilita el downstream correspondiente sin perder evidencia del filtro.
 
 ### 3.6 `scored`
 
@@ -65,8 +65,14 @@ La evidencia es el puente entre captura y producto. `OfferEvidence` debe permiti
 - qué campos fueron consistentes entre fuentes;
 - qué campo ganó como fuente de verdad;
 - con qué confianza se consolidó una empresa u oferta.
+- qué evidencia fue explícita/reliable versus curada/provisional al decidir exclusión o ambigüedad.
 
 La oferta canónica NUNCA debe borrar la diversidad de evidencia original. Consolida, no aplasta historia.
+
+Para `source-search-strategy`, la evidencia temprana también incluye referencias a datasets curados internos. Dos casos cerrados hoy:
+
+- `hybrid_cities`: dataset versionado en repo, sembrado desde la lista de ciudades de abril 2026, usado solo para validar híbridos fuera de Madrid con asistencia explícita `< 3 días/mes`.
+- `known_consultancies`: lista provisional curada de compañías/aliases; un match sin texto explícito NO excluye, solo deja la oferta como ambigua con evidencia trazable.
 
 ## 5. Reglas de canonicalización
 
@@ -119,10 +125,12 @@ El record operativo debe preservar, como mínimo:
 - `job_id`, `run_id`, `source_key`;
 - snapshot de capabilities declaradas por el adapter;
 - snapshot de filtros intentados del lado de la fuente;
+- `capture profile` canónica y plan derivado de ejecución (`pushed_down_filters` vs `post_fetch_filters`);
 - `checkpoint_in` / `checkpoint_out`;
 - counters de fetch/items capturados;
 - retries intentados + clasificación final del error;
 - observaciones de rate limit y estado final.
+- outcomes canónicos por oferta con `evidence_refs` y versiones de datasets consultados cuando correspondan.
 
 Cuando un source adapter produce múltiples capturas raw para la misma oferta en un mismo run, también debe sobrevivir la procedencia de cada payload (`list` vs `detail`) junto con el request efectivo de discovery que originó la evidencia.
 

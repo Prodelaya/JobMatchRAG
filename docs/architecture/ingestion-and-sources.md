@@ -41,10 +41,11 @@ Dentro de esa secuencia, la responsabilidad propia de ingesta cubre:
 
 1. seleccionar la fuente y abrir el contexto de run;
 2. ejecutar la captura bajo el adapter correspondiente;
-3. entregar material raw trazable para persistencia downstream sin reinterpretación destructiva;
-4. entregar material trazable a normalización.
+3. derivar parámetros de proveedor desde una `capture profile` canónica sin convertirlos en autoridad semántica;
+4. aplicar filtros canónicos post-fetch cuando la fuente no soporte o no pruebe la semántica requerida;
+5. entregar material raw trazable para persistencia downstream sin reinterpretación destructiva.
 
-La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final del producto.
+La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final del producto. Sí debe ejecutar exclusiones canónicas explícitas y preservación de ambigüedad antes de handoff a normalización/scoring.
 
 ## 4. Boundary compartido del framework `source-ingestion`
 
@@ -56,6 +57,8 @@ La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final de
 - taxonomía de errores + retries selectivos;
 - guardrails por defecto para retries, alcance y rate-limit awareness;
 - handoff raw trazable hacia la futura persistencia de `RawOfferSnapshot`.
+- `capture profile` canónica agnóstica a proveedor con familias bilingües, filtros objetivo y reglas de degradación.
+- split auditable entre pushdown soportado por proveedor y filtros post-fetch internos.
 
 Quedan fuera de este framework:
 
@@ -92,9 +95,10 @@ SourceAdapter
 
 - `GET /offer` es la vía primaria de discovery;
 - `GET /offer/{offerId}` se usa solo para enriquecer ofertas nuevas para el sistema;
-- `sinceDate` y demás filtros del lado de la fuente son optimizaciones declaradas por `capabilities`, no autoridad canónica de continuidad o elegibilidad; en el InfoJobs actual eso vive en `provider_filters`, no en una traducción automática de `requested_window_start/end`;
+- `sinceDate` y demás filtros del lado de la fuente son optimizaciones declaradas por `capabilities`, no autoridad canónica de continuidad o elegibilidad; en el InfoJobs actual eso vive como params derivados desde la `capture profile`, no en una traducción automática de `requested_window_start/end`;
 - el checkpoint que vuelve del adapter representa continuación interna de página/oferta y puede convivir con el `checkpoint_in` opaco del framework sin reinterpretarlo, pero en InfoJobs la garantía real es solo best-effort porque el proveedor no documenta orden estable entre llamadas; el payload debe incluir marcador de adapter/versión para rechazar checkpoints ajenos o incompatibles de forma explícita;
 - el handoff raw preserva capturas hermanas `list` y `detail` cuando existe detalle, y si el detalle de una oferta nueva queda bloqueado por presupuesto/rate limit igual preserva el raw `list` con una marca explícita de `detail` diferido.
+- reglas semánticas como modalidad/geografía AVE-friendly o detección de consultoría/body-shopping permanecen post-fetch dentro de JobMatchRAG aunque InfoJobs provea filtros parciales.
 
 ## 6. Modelo de trazabilidad de `job` y `run`
 
@@ -120,6 +124,7 @@ Debe capturar como mínimo:
 - `source_key`;
 - snapshot de capabilities del adapter usado;
 - snapshot del filter intent;
+- traza canónica con `capture profile`, params derivados, identidades canónicas de filtros pusheados, mapping explícito semántica→param de proveedor, filtros post-fetch y versiones de datasets curados consultados;
 - timestamps de inicio/fin;
 - counters de fetch/items;
 - `checkpoint_in` / `checkpoint_out`;
@@ -144,6 +149,8 @@ Un run debe permitir responder, como mínimo:
 - cuántos items se capturaron;
 - qué capabilities declaró el adapter para ese run;
 - qué filtros del lado de la fuente se intentaron usar;
+- qué parte del criterio canónico se intentó empujar al proveedor y qué parte quedó post-fetch;
+- qué datasets curados participaron (por ejemplo ciudades híbridas AVE-friendly y lista provisional de consultoras conocidas) y con qué versión;
 - qué checkpoints entraron/salieron;
 - qué errores ocurrieron;
 - si hubo retry, cierre parcial o corte terminal.

@@ -37,7 +37,7 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | 3 | `uv-bootstrap-alignment` | cerrado | `project-tooling-bootstrap` | Mini-change de alineación documental del bootstrap local con `uv + .venv`; recomienda `uv venv .venv` + `uv pip install -e .[dev]`, preserva el contrato `.venv/bin/python -m ...` y no agrega tooling nuevo ni capacidad funcional de ingesta. |
 | 4 | `source-ingestion-framework` | cerrado | `uv-bootstrap-alignment` | Definir e implementar el framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
 | 5 | `first-source-infojobs` | cerrado | `source-ingestion-framework` | Implementó la primera fuente real sobre InfoJobs API con adapter concreto, tests verdes, preservación raw `list/detail` y documentación viva alineada. |
-| 6 | `source-search-strategy` | pendiente | `first-source-infojobs` | Definir la estrategia agnóstica de búsqueda/captura: familias de queries objetivo, filtros canónicos deseados, prioridades geográficas y reglas de degradación cuando una fuente no soporte algo. |
+| 6 | `source-search-strategy` | cerrado | `first-source-infojobs` | Implementó la estrategia agnóstica de búsqueda/captura: `capture profile` bilingüe, datasets curados para ciudades híbridas/consultoras conocidas, filtros canónicos post-fetch y trazabilidad de pushdown vs semantic authority. |
 | 7 | `infojobs-search-mapping` | pendiente | `source-search-strategy`, `first-source-infojobs` | Traducir la estrategia de búsqueda agnóstica a las capacidades reales de InfoJobs (`q`, ubicación, `sinceDate`, filtros soportados) sin mezclarla con filtros internos canónicos. |
 | 8 | `offer-normalization-canonicalization` | pendiente | `infojobs-search-mapping` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
 | 9 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar filtros duros y scoring base explicable por reglas. |
@@ -72,6 +72,6 @@ Si eso pasa, el cambio debe explicitar:
 
 Hoy, el foco recomendado pasa a ser:
 
-**abrir `source-search-strategy`**
+**abrir `infojobs-search-mapping`**
 
-Razón: `first-source-infojobs` ya dejó operativo el primer adapter real, pero todavía falta decidir qué universo de búsquedas quiere capturar JobMatchRAG de forma agnóstica a proveedor. Cerrar primero esa estrategia reduce el riesgo de acoplar el producto a los filtros concretos de InfoJobs y deja mejor preparado el cambio posterior `infojobs-search-mapping` antes de pasar a normalización/canonicalización.
+Razón: `source-search-strategy` ya quedó cerrado y archivado. El siguiente vertical recomendado sigue siendo `infojobs-search-mapping`, porque ahora toca materializar `q`, ubicación, `sinceDate` y otros params soportados por InfoJobs sin mezclar esos detalles de ejecución con la autoridad semántica del producto definida por el `capture profile` canónico.

@@ -51,10 +51,9 @@ Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futur
 
 ## 4. Siguiente cambio recomendado
 
-Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment`, `source-ingestion-framework` y `first-source-infojobs` ya cerrados, el foco recomendado hoy es:
+Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment`, `source-ingestion-framework`, `first-source-infojobs` y `source-search-strategy` ya cerrados y archivados, el foco recomendado hoy es:
 
-1. **abrir `offer-normalization-canonicalization`**
-   - la primera fuente real ya quedó implementada, verificada y archivada;
-   - ahora conviene transformar la evidencia raw en entidades canónicas, reglas de deduplicación y republicación consistentes.
+1. **abrir `infojobs-search-mapping`**
+   - ahora sí conviene traducir la estrategia canónica ya archivada a params nativos de InfoJobs sin contaminar la semántica del producto.
 
 La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda por encima de las recomendaciones históricas de este documento.

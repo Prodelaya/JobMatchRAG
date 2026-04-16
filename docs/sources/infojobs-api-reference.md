@@ -118,16 +118,17 @@ Es el endpoint principal para:
 
 - discovery de ofertas;
 - capturas paginadas;
-- filtros temporales explícitos del lado del proveedor como `sinceDate` cuando operación los pide en `provider_filters`;
+- filtros temporales explícitos del lado del proveedor como `sinceDate` cuando la `capture profile` canónica derive ese narrowing;
 - uso de filtros del lado de la fuente como optimización.
 
 En la implementación vigente de `first-source-infojobs`:
 
 - cada `fetch()` del adapter procesa **una página de `GET /offer`**;
 - `maxResults` se fija en **50** como ceiling operativo inicial;
-- el request efectivo (`page`, `maxResults`, filtros soportados y `sinceDate` si existe) se preserva en la traza raw del run;
+- el request efectivo (`page`, `maxResults`, params derivados soportados y `sinceDate` si existe) se preserva en la traza raw del run;
 - la continuidad real del run sigue un checkpoint interno del framework/adapter y **NO** convierte `sinceDate` en checkpoint canónico;
 - ese checkpoint es **best-effort**: usa página + posición + `next_offer_id` como ancla para reanudar dentro del listado actual, pero InfoJobs no ofrece garantía fuerte contra reordenamientos/mutaciones entre llamadas.
+- reglas semánticas que InfoJobs no prueba de forma confiable — por ejemplo hybrid fuera de Madrid con asistencia `< 3 días/mes` y ciudad AVE-friendly, detección de consultoría/body-shopping o exclusiones semánticas de seniority — quedan obligatoriamente post-fetch dentro de JobMatchRAG.
 
 ### Seguridad
 
@@ -176,6 +177,7 @@ En la implementación vigente de `first-source-infojobs`:
 - `province` pisa a `country`.
 - `facets=true` puede ser útil para exploración y debugging, pero probablemente no para la captura estándar.
 - `sinceDate` es relativo al “hoy” de InfoJobs; sirve como optimización temporal del lado del proveedor, no como checkpoint canónico del sistema ni como traducción automática de `window_start/window_end`.
+- `q`, ubicación, `teleworking` y `sinceDate` deben entenderse como params derivados del plan de ejecución; ayudan a reducir volumen, pero NO reemplazan la `capture profile` ni los filtros canónicos post-fetch.
 
 ### Campos relevantes de respuesta
 

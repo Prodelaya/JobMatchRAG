@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from .contracts import ErrorCategory, ErrorClassification, FetchContext, SourceAdapter
+from .contracts import ErrorCategory, ErrorClassification, FetchContext, ReferenceDatasetSnapshot, SourceAdapter
 from .models import (
+    CanonicalOfferSnapshot,
+    CanonicalRunTrace,
     FilterIntent,
     IngestionJob,
     IngestionRun,
@@ -13,6 +15,8 @@ from .models import (
     RunStatus,
     thaw_filter_value,
 )
+from .data_loader import load_curated_datasets
+from .search_strategy import build_capture_profile, build_provider_execution_plan, evaluate_offer
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +54,13 @@ class IngestionOrchestrator:
             )
 
         checkpoint_enabled = adapter.capabilities.checkpoint_support
+        profile = build_capture_profile()
+        execution_plan = build_provider_execution_plan(
+            profile=profile,
+            provider_filters=thaw_filter_value(job.filter_intent.provider_filters),
+            supported_filters=adapter.capabilities.supported_filters,
+        )
+        datasets = load_curated_datasets()
         run = IngestionRun(
             run_id=str(uuid4()),
             job_id=job.job_id,
@@ -61,6 +72,20 @@ class IngestionOrchestrator:
             requested_by=job.requested_by,
             checkpoint_in=job.checkpoint_in if checkpoint_enabled else None,
             checkpoint_out=job.checkpoint_in if checkpoint_enabled else None,
+            canonical_trace=CanonicalRunTrace(
+                capture_profile_ref=profile.profile_id,
+                execution_plan=execution_plan,
+                dataset_snapshots=(
+                    ReferenceDatasetSnapshot(
+                        dataset_key="hybrid_cities",
+                        dataset_version=datasets.hybrid_cities.dataset_version,
+                    ),
+                    ReferenceDatasetSnapshot(
+                        dataset_key="known_consultancies",
+                        dataset_version=datasets.known_consultancies.dataset_version,
+                    ),
+                ),
+            ),
         )
 
         raw_handoff: list[dict[str, object]] = []
@@ -78,7 +103,7 @@ class IngestionOrchestrator:
                 run_id=run.run_id,
                 source_key=adapter.source_key,
                 capability_snapshot=adapter.capabilities,
-                requested_filters=thaw_filter_value(job.filter_intent.provider_filters),
+                requested_filters=thaw_filter_value(execution_plan.derived_provider_params),
                 requested_window_start=job.window_start,
                 requested_window_end=job.window_end,
                 checkpoint=checkpoint,
@@ -110,22 +135,40 @@ class IngestionOrchestrator:
                 return OrchestrationResult(run=run, raw_handoff=tuple(raw_handoff))
 
             remaining_item_budget = self._remaining_item_budget(job, run)
-            forwarded_items = outcome.raw_items
+            evaluated_items: list[dict[str, object]] = []
+            for raw_item in outcome.raw_items:
+                evaluation = evaluate_offer(raw_item, profile=profile, datasets=datasets)
+                trace = run.canonical_trace
+                trace_index = len(trace.offer_outcomes) if trace is not None else 0
+                offer_id = str(raw_item.get("id") or raw_item.get("source_offer_id") or trace_index)
+                if trace is not None:
+                    trace.offer_outcomes.append(
+                        CanonicalOfferSnapshot(
+                            source_offer_id=offer_id,
+                            decision=evaluation.decision,
+                            outcomes=evaluation.outcomes,
+                        )
+                    )
+                if evaluation.decision != "excluded":
+                    evaluated_items.append(raw_item)
+
+            forwarded_items = tuple(evaluated_items)
+            budget_truncated = False
             if remaining_item_budget is not None:
-                forwarded_items = outcome.raw_items[:remaining_item_budget]
+                budget_truncated = len(forwarded_items) > remaining_item_budget
+                forwarded_items = forwarded_items[:remaining_item_budget]
 
             raw_handoff.extend(forwarded_items)
             run.counters.raw_items_seen += len(outcome.raw_items)
             run.counters.raw_items_forwarded = len(raw_handoff)
             run.rate_limit_observations.extend(outcome.rate_limit_observations)
             exhausted = outcome.exhausted
-            truncated = len(forwarded_items) < len(outcome.raw_items)
 
-            if checkpoint_enabled and not truncated:
+            if checkpoint_enabled and not budget_truncated:
                 run.checkpoint_out = outcome.next_checkpoint
                 checkpoint = outcome.next_checkpoint
 
-            if truncated or self._item_limit_reached(job, run):
+            if budget_truncated or self._item_limit_reached(job, run):
                 run.complete(RunStatus.PARTIAL, "bounded run scope reached")
                 return OrchestrationResult(run=run, raw_handoff=tuple(raw_handoff))
 

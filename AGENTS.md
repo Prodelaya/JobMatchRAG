@@ -38,13 +38,15 @@ Antes de cerrar un cambio, revisá explícitamente si `docs/PRD-JobMatchRAG.md`,
 
 ## Verificación local
 
+Recommended local bootstrap:
+
 Bootstrap local recomendado:
 
 - `uv venv .venv`
 - `uv pip install -e .[dev]`
 
 Este bootstrap local recomendado preserva el contrato existente de verificación `.venv/bin/python -m ...`.
-No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance funcional.
+No adopta `uv sync`, `uv run`, lockfiles, hooks, CI, Docker, runtime ni cambios de alcance functional scope.
 
 - `.venv/bin/python -m ruff check .`
 - `.venv/bin/python -m mypy src`

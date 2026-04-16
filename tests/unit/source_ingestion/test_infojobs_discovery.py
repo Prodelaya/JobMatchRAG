@@ -82,6 +82,29 @@ def test_build_listing_query_does_not_claim_canonical_window_translation() -> No
     assert query == {"q": "python", "page": 1, "maxResults": 25}
 
 
+def test_build_listing_query_ignores_canonical_post_fetch_filters() -> None:
+    query = build_listing_query(
+        build_context(
+            requested_filters={
+                "q": "python automation",
+                "sinceDate": "_15_DAYS",
+                "geography_modality": "hybrid_under_three_days",
+                "consultancy_body_shopping": "explicit_only",
+            }
+        ),
+        checkpoint_state=InfoJobsCheckpointState(page=2, offer_index=0),
+        supported_filters=frozenset({"q", "sinceDate", "province"}),
+        page_size=25,
+    )
+
+    assert query == {
+        "q": "python automation",
+        "sinceDate": "_15_DAYS",
+        "page": 2,
+        "maxResults": 25,
+    }
+
+
 def test_checkpoint_round_trip_keeps_internal_continuation_separate_from_since_date() -> None:
     checkpoint = encode_checkpoint(
         InfoJobsCheckpointState(page=2, offer_index=4, next_offer_id="offer-5")

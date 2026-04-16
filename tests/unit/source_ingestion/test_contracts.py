@@ -3,11 +3,16 @@ from __future__ import annotations
 from datetime import datetime
 
 from jobmatchrag.source_ingestion.contracts import (
+    CanonicalFilterOutcome,
     ErrorCategory,
     ErrorClassification,
+    EvidenceRef,
     KnownOfferIndex,
     PaginationSupport,
+    ProviderExecutionPlan,
+    ProviderFilterMapping,
     RawCaptureOrigin,
+    ReferenceDatasetSnapshot,
     RateLimitObservation,
     RateLimitSupport,
     RawOfferHandoff,
@@ -92,3 +97,59 @@ def test_infojobs_adapter_seam_names_known_offer_lookup_and_raw_handoff_shape() 
     assert known_offer_index.is_new("infojobs", "offer-1") is True
     assert handoff["captures"][RawCaptureOrigin.LIST]["origin"] is RawCaptureOrigin.LIST
     assert handoff["captures"][RawCaptureOrigin.LIST]["payload"]["title"] == "Python Engineer"
+
+
+def test_canonical_filter_outcome_keeps_dataset_evidence_and_explicit_rationale() -> None:
+    snapshot = ReferenceDatasetSnapshot(dataset_key="hybrid_cities", dataset_version="2026.04.1")
+    outcome = CanonicalFilterOutcome(
+        filter_key="consultancy_body_shopping",
+        status="ambiguous",
+        reason_code="known_company_signal_only",
+        evidence_refs=(
+            EvidenceRef(
+                evidence_type="company_signal",
+                locator="accenture",
+                dataset_version=snapshot.dataset_version,
+                confidence="medium",
+            ),
+            EvidenceRef(
+                evidence_type="consultancy_text",
+                locator="description",
+                confidence="explicit",
+            ),
+        ),
+    )
+
+    assert outcome.filter_key == "consultancy_body_shopping"
+    assert outcome.status == "ambiguous"
+    assert outcome.reason_code == "known_company_signal_only"
+    assert outcome.evidence_refs[0].dataset_version == snapshot.dataset_version
+    assert outcome.evidence_refs[1].confidence == "explicit"
+
+
+def test_provider_execution_plan_separates_pushdown_from_post_fetch_filters() -> None:
+    plan = ProviderExecutionPlan(
+        canonical_profile_ref="source-search-strategy.v1",
+        derived_provider_params={"q": "python automation", "sinceDate": "_15_DAYS"},
+        pushed_down_filters=("search_terms", "freshness_window"),
+        provider_filter_mappings=(
+            ProviderFilterMapping(canonical_filter_key="search_terms", provider_param="q"),
+            ProviderFilterMapping(canonical_filter_key="freshness_window", provider_param="sinceDate"),
+        ),
+        post_fetch_filters=("geography_modality", "consultancy_body_shopping", "seniority_semantic"),
+        degradation_notes=("freshness remains advisory provider-side",),
+    )
+
+    assert plan.canonical_profile_ref == "source-search-strategy.v1"
+    assert plan.derived_provider_params == {"q": "python automation", "sinceDate": "_15_DAYS"}
+    assert plan.pushed_down_filters == ("search_terms", "freshness_window")
+    assert plan.provider_filter_mappings == (
+        ProviderFilterMapping(canonical_filter_key="search_terms", provider_param="q"),
+        ProviderFilterMapping(canonical_filter_key="freshness_window", provider_param="sinceDate"),
+    )
+    assert plan.post_fetch_filters == (
+        "geography_modality",
+        "consultancy_body_shopping",
+        "seniority_semantic",
+    )
+    assert plan.degradation_notes == ("freshness remains advisory provider-side",)

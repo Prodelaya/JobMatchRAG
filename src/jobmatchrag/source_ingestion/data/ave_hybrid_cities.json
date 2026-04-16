@@ -1,0 +1,23 @@
+{
+  "dataset_key": "hybrid_cities",
+  "dataset_version": "2026.04.1",
+  "seed_source": "user-city-list-apr-2026",
+  "seeded_at": "2026-04-15",
+  "cities": [
+    {"city_key": "barcelona", "display_name": "Barcelona", "aliases": ["barcelona", "barna"], "station_name": "Barcelona Sants", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "zaragoza", "display_name": "Zaragoza", "aliases": ["zaragoza"], "station_name": "Zaragoza Delicias", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "valencia", "display_name": "Valencia", "aliases": ["valencia"], "station_name": "València Joaquín Sorolla", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "sevilla", "display_name": "Sevilla", "aliases": ["sevilla", "seville"], "station_name": "Sevilla Santa Justa", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "malaga", "display_name": "Málaga", "aliases": ["málaga", "malaga"], "station_name": "Málaga María Zambrano", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "valladolid", "display_name": "Valladolid", "aliases": ["valladolid"], "station_name": "Valladolid-Campo Grande", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "alicante", "display_name": "Alicante", "aliases": ["alicante", "alacant"], "station_name": "Alicante-Terminal", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "cordoba", "display_name": "Córdoba", "aliases": ["córdoba", "cordoba"], "station_name": "Córdoba", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "cuenca", "display_name": "Cuenca", "aliases": ["cuenca"], "station_name": "Cuenca Fernando Zóbel", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "albacete", "display_name": "Albacete", "aliases": ["albacete"], "station_name": "Albacete-Los Llanos", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "tarragona", "display_name": "Tarragona", "aliases": ["tarragona"], "station_name": "Camp de Tarragona", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "girona", "display_name": "Girona", "aliases": ["girona", "gerona"], "station_name": "Girona", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "lleida", "display_name": "Lleida", "aliases": ["lleida", "lerida"], "station_name": "Lleida Pirineus", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "ciudad-real", "display_name": "Ciudad Real", "aliases": ["ciudad real"], "station_name": "Ciudad Real", "supports_monthly_hybrid": true, "status": "active"},
+    {"city_key": "puertollano", "display_name": "Puertollano", "aliases": ["puertollano"], "station_name": "Puertollano", "supports_monthly_hybrid": true, "status": "active"}
+  ]
+}

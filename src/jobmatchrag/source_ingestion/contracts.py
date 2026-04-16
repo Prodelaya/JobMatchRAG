@@ -65,6 +65,47 @@ class RateLimitObservation:
     details: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class EvidenceRef:
+    evidence_type: str
+    locator: str
+    dataset_version: str | None = None
+    confidence: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceDatasetSnapshot:
+    dataset_key: str
+    dataset_version: str
+    loaded_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalFilterOutcome:
+    filter_key: str
+    status: str
+    reason_code: str
+    evidence_refs: tuple[EvidenceRef, ...] = ()
+    applied_stage: str = "post_fetch"
+    policy_version: str = "source-search-strategy.v1"
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderFilterMapping:
+    canonical_filter_key: str
+    provider_param: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderExecutionPlan:
+    canonical_profile_ref: str
+    derived_provider_params: dict[str, Any] = field(default_factory=dict)
+    pushed_down_filters: tuple[str, ...] = ()
+    provider_filter_mappings: tuple[ProviderFilterMapping, ...] = ()
+    post_fetch_filters: tuple[str, ...] = ()
+    degradation_notes: tuple[str, ...] = ()
+
+
 class RawCapture(TypedDict):
     origin: RawCaptureOrigin
     endpoint: str

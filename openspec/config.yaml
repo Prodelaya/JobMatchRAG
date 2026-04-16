@@ -3,16 +3,16 @@ schema: spec-driven
 strict_tdd: true
 
 context: |
-  Tech stack: Python 3.12 package on setuptools with src layout under `src/jobmatchrag`.
-  Architecture: living docs target a FastAPI + Celery modular monolith; current implemented slice is the pure-Python `source_ingestion` framework.
-  Testing: pytest with unit + integration suites under `tests/`; no E2E tool and no coverage plugin configured.
+  Tech stack: Python package on setuptools with src layout under `src/jobmatchrag`.
+  Architecture: living docs define a FastAPI + Celery modular monolith; the implemented slice is the pure-Python `source_ingestion` framework.
+  Testing: pytest runner with unit + integration suites under `tests/`; no E2E runner and no coverage plugin detected.
   Style: `.venv/bin/python -m ruff check .`, `.venv/bin/python -m mypy src`, `.venv/bin/python -m pytest`.
 
 testing:
-  detected_at: 2026-04-14
+  detected_at: 2026-04-15
   runner: pytest
   test_command: .venv/bin/python -m pytest
-  framework: pytest 9.0.3
+  framework: pytest
   layers:
     unit: pytest
     integration: pytest

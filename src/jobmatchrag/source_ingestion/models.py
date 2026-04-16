@@ -8,8 +8,11 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from .contracts import (
+    CanonicalFilterOutcome,
     ErrorClassification,
+    ProviderExecutionPlan,
     RateLimitObservation,
+    ReferenceDatasetSnapshot,
     SourceCapabilities,
 )
 
@@ -102,6 +105,21 @@ class RunCounters:
     raw_items_forwarded: int = 0
 
 
+@dataclass(frozen=True, slots=True)
+class CanonicalOfferSnapshot:
+    source_offer_id: str
+    decision: str
+    outcomes: tuple[CanonicalFilterOutcome, ...] = ()
+
+
+@dataclass(slots=True)
+class CanonicalRunTrace:
+    capture_profile_ref: str
+    execution_plan: ProviderExecutionPlan
+    dataset_snapshots: tuple[ReferenceDatasetSnapshot, ...] = ()
+    offer_outcomes: list[CanonicalOfferSnapshot] = field(default_factory=list)
+
+
 @dataclass(slots=True)
 class IngestionRun:
     run_id: str
@@ -121,6 +139,7 @@ class IngestionRun:
     rate_limit_observations: list[RateLimitObservation] = field(default_factory=list)
     error_summary: ErrorClassification | None = None
     outcome_reason: str | None = None
+    canonical_trace: CanonicalRunTrace | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def complete(self, status: RunStatus, reason: str | None = None) -> None:
