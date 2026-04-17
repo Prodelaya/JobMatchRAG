@@ -7,7 +7,12 @@ JobMatchRAG es un sistema personal de inteligencia de empleo para Pablo Laya. Su
 - foundation documental: cerrada
 - bootstrap de tooling Python: cerrado
 - alineación del bootstrap local con `uv + .venv`: cerrada
-- siguiente vertical recomendado: abrir `infojobs-search-mapping`
+- framework de ingesta de fuentes: cerrado
+- primera fuente real sobre InfoJobs API: cerrada
+- estrategia agnóstica de búsqueda/captura: cerrada
+- mapping de búsqueda InfoJobs auditable: cerrado
+- slice hoy implementado: la base documental y de tooling ya está cerrada, existe framework de ingesta, integración real con InfoJobs y split explícito entre estrategia canónica de búsqueda y su proyección al proveedor
+- siguiente vertical recomendado: abrir `offer-normalization-canonicalization`
 
 ## Fuente de verdad
 
