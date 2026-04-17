@@ -125,7 +125,8 @@ En la implementación vigente de `first-source-infojobs`:
 
 - cada `fetch()` del adapter procesa **una página de `GET /offer`**;
 - `maxResults` se fija en **50** como ceiling operativo inicial;
-- el request efectivo (`page`, `maxResults`, params derivados soportados y `sinceDate` si existe) se preserva en la traza raw del run;
+- el request efectivo (`page`, `maxResults` y SOLO params proyectados por el mapper) se preserva en la traza raw del run;
+- antes del adapter existe un mapper explícito `capture profile canónica -> InfoJobsExecutionPlan`; ese mapper guarda `family_plans`, `parameter_projections`, `trust_level`, degradaciones y checks pendientes post-fetch;
 - la continuidad real del run sigue un checkpoint interno del framework/adapter y **NO** convierte `sinceDate` en checkpoint canónico;
 - ese checkpoint es **best-effort**: usa página + posición + `next_offer_id` como ancla para reanudar dentro del listado actual, pero InfoJobs no ofrece garantía fuerte contra reordenamientos/mutaciones entre llamadas.
 - reglas semánticas que InfoJobs no prueba de forma confiable — por ejemplo hybrid fuera de Madrid con asistencia `< 3 días/mes` y ciudad AVE-friendly, detección de consultoría/body-shopping o exclusiones semánticas de seniority — quedan obligatoriamente post-fetch dentro de JobMatchRAG.
@@ -177,7 +178,19 @@ En la implementación vigente de `first-source-infojobs`:
 - `province` pisa a `country`.
 - `facets=true` puede ser útil para exploración y debugging, pero probablemente no para la captura estándar.
 - `sinceDate` es relativo al “hoy” de InfoJobs; sirve como optimización temporal del lado del proveedor, no como checkpoint canónico del sistema ni como traducción automática de `window_start/window_end`.
+- `q` es importante, pero NO exclusiva ni autoridad semántica; la familia canónica sigue viviendo en JobMatchRAG.
+- `experienceMin` es `partial-but-strong`: ayuda al discovery, pero seniority sigue validándose semánticamente post-fetch.
+- `category` / `subcategory` son contextuales; `teleworking` es support-only; `sinceDate` es optimization-only.
 - `q`, ubicación, `teleworking` y `sinceDate` deben entenderse como params derivados del plan de ejecución; ayudan a reducir volumen, pero NO reemplazan la `capture profile` ni los filtros canónicos post-fetch.
+
+### Contrato operativo de proyección
+
+Para esta vertical queda cerrado este boundary:
+
+- la semántica autoritativa vive en familias canónicas bilingües (`ai_automation`, `automation`, `adjacent_odoo`);
+- InfoJobs recibe únicamente params proyectados (`q`, ubicación explícita, `experienceMin`, `sinceDate`, `category`/`subcategory`, `teleworking` y equivalentes soportados);
+- cada param proyectado debe quedar auditado con `authority=canonical`, `trust_level` y `rationale`;
+- el adapter NO reconstruye semántica a partir del request final: serializa params ya aprobados y preserva el request efectivo por query emitida.
 
 ### Campos relevantes de respuesta
 
@@ -569,10 +582,13 @@ Además, en el InfoJobs actual el checkpoint del adapter solo puede prometer con
 4. decidir enriquecimiento por `offerId` usando `GET /offer/{offerId}` solo para ofertas nuevas;
 5. persistir snapshots raw separados o componibles;
 6. entregar material a normalización sin perder:
-   - request params efectivos,
-   - versión del endpoint usado,
-   - timestamps de captura por origen (`list` y, si existe, `detail`),
-   - `requestId` si hubo error.
+    - request params efectivos,
+    - identidad del plan canónico que emitió cada request (`family_key`, idioma, `query_label`),
+    - versión del endpoint usado,
+    - timestamps de captura por origen (`list` y, si existe, `detail`),
+    - `requestId` si hubo error.
+
+Además, si múltiples queries ES/EN/mixed devuelven la misma oferta en un mismo run, el framework debe forwardearla una sola vez por `source_offer_id` y conservar igual la traza de cada request para auditoría.
 
 ### 8.2 Endpoints mínimos para la V1 del adapter
 

@@ -38,7 +38,7 @@ No es un contrato rígido e inmutable. El orden puede cambiar si aparece una dep
 | 4 | `source-ingestion-framework` | cerrado | `uv-bootstrap-alignment` | Definir e implementar el framework común de fuentes, adapters, runs, errores, retries y límites operativos de ingesta. |
 | 5 | `first-source-infojobs` | cerrado | `source-ingestion-framework` | Implementó la primera fuente real sobre InfoJobs API con adapter concreto, tests verdes, preservación raw `list/detail` y documentación viva alineada. |
 | 6 | `source-search-strategy` | cerrado | `first-source-infojobs` | Implementó la estrategia agnóstica de búsqueda/captura: `capture profile` bilingüe, datasets curados para ciudades híbridas/consultoras conocidas, filtros canónicos post-fetch y trazabilidad de pushdown vs semantic authority. |
-| 7 | `infojobs-search-mapping` | pendiente | `source-search-strategy`, `first-source-infojobs` | Traducir la estrategia de búsqueda agnóstica a las capacidades reales de InfoJobs (`q`, ubicación, `sinceDate`, filtros soportados) sin mezclarla con filtros internos canónicos. |
+| 7 | `infojobs-search-mapping` | cerrado | `source-search-strategy`, `first-source-infojobs` | Tradujo la estrategia de búsqueda agnóstica a un mapping explícito y auditable hacia InfoJobs sin mezclar detalles de ejecución con autoridad semántica canónica. |
 | 8 | `offer-normalization-canonicalization` | pendiente | `infojobs-search-mapping` | Normalizar ofertas, consolidar evidencia, dedupe cross-source y reglas de republicación. |
 | 9 | `rule-based-scoring` | pendiente | `offer-normalization-canonicalization` | Implementar filtros duros y scoring base explicable por reglas. |
 | 10 | `llm-score-adjustment` | pendiente | `rule-based-scoring` | Añadir inferencia semántica acotada sin romper auditabilidad ni control de coste. |
@@ -72,6 +72,6 @@ Si eso pasa, el cambio debe explicitar:
 
 Hoy, el foco recomendado pasa a ser:
 
-**abrir `infojobs-search-mapping`**
+**abrir `offer-normalization-canonicalization`**
 
-Razón: `source-search-strategy` ya quedó cerrado y archivado. El siguiente vertical recomendado sigue siendo `infojobs-search-mapping`, porque ahora toca materializar `q`, ubicación, `sinceDate` y otros params soportados por InfoJobs sin mezclar esos detalles de ejecución con la autoridad semántica del producto definida por el `capture profile` canónico.
+Razón: `infojobs-search-mapping` ya quedó cerrado y archivado, dejando listo el split entre semántica canónica y proyección InfoJobs con trazabilidad por query. El siguiente cambio de producto recomendado es `offer-normalization-canonicalization`, porque ahora ya existe un handoff de source-ingestion más limpio y auditable para empezar a consolidar evidencia cross-source sin contaminar el dominio con params del proveedor.

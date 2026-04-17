@@ -105,6 +105,31 @@ def test_build_listing_query_ignores_canonical_post_fetch_filters() -> None:
     }
 
 
+def test_build_listing_query_serializes_only_mapped_provider_params_without_reconstructing_family_semantics() -> None:
+    query = build_listing_query(
+        build_context(
+            requested_filters={
+                "q": "automatización ia aplicada python",
+                "experienceMin": "1",
+                "family_key": "ai_automation",
+                "language": "es",
+                "authority": "canonical",
+                "pending_post_fetch_checks": ["seniority_semantic"],
+            }
+        ),
+        checkpoint_state=InfoJobsCheckpointState(page=4, offer_index=0),
+        supported_filters=frozenset({"q", "experienceMin", "province"}),
+        page_size=25,
+    )
+
+    assert query == {
+        "q": "automatización ia aplicada python",
+        "experienceMin": "1",
+        "page": 4,
+        "maxResults": 25,
+    }
+
+
 def test_checkpoint_round_trip_keeps_internal_continuation_separate_from_since_date() -> None:
     checkpoint = encode_checkpoint(
         InfoJobsCheckpointState(page=2, offer_index=4, next_offer_id="offer-5")

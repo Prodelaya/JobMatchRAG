@@ -156,7 +156,7 @@ La primera fuente de producción cerrada para V1 es **InfoJobs official API**. O
 
 ### 9.2 Política de filtrado
 
-Se permite filtrar del lado de la fuente para reducir ruido, pero eso no reemplaza la elegibilidad interna: el filtro duro propio sigue siendo la autoridad antes del scoring. En V1 la semántica de búsqueda/captura vive en una `capture profile` canónica; el proveedor recibe params derivados y los filtros no soportados (por ejemplo AVE-friendly hybrid o consultoría/body-shopping) se resuelven post-fetch dentro de JobMatchRAG.
+Se permite filtrar del lado de la fuente para reducir ruido, pero eso no reemplaza la elegibilidad interna: el filtro duro propio sigue siendo la autoridad antes del scoring. En V1 la semántica de búsqueda/captura vive en una `capture profile` canónica; el proveedor recibe params derivados mediante un mapper auditable y los filtros no soportados (por ejemplo AVE-friendly hybrid o consultoría/body-shopping) se resuelven post-fetch dentro de JobMatchRAG. Los params del portal son artefactos de ejecución, no definición del producto.
 
 ---
 

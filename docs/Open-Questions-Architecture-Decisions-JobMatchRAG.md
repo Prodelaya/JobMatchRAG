@@ -34,6 +34,8 @@ Este documento YA NO considera abiertas, dentro de la foundation:
 
 Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futuras salvo cambio explícito de estrategia.
 
+También deja de estar abierto que InfoJobs deba definir la semántica de búsqueda: con `infojobs-search-mapping`, la autoridad queda explícitamente del lado canónico y el provider solo proyecta ejecución auditable.
+
 ---
 
 ## 3. Documentos de referencia para decisiones resueltas
@@ -51,9 +53,9 @@ Eso ya vive en los documentos foundation y NO debe reabrirse en verticales futur
 
 ## 4. Siguiente cambio recomendado
 
-Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment`, `source-ingestion-framework`, `first-source-infojobs` y `source-search-strategy` ya cerrados y archivados, el foco recomendado hoy es:
+Con `decision-foundation-pack`, `project-tooling-bootstrap`, `uv-bootstrap-alignment`, `source-ingestion-framework`, `first-source-infojobs`, `source-search-strategy` e `infojobs-search-mapping` ya cerrados y archivados, el foco recomendado hoy es:
 
-1. **abrir `infojobs-search-mapping`**
-   - ahora sí conviene traducir la estrategia canónica ya archivada a params nativos de InfoJobs sin contaminar la semántica del producto.
+1. **abrir `offer-normalization-canonicalization`**
+   - ahora sí conviene usar ese handoff/source trace más limpio para consolidar evidencia y deduplicación sin arrastrar semántica del proveedor.
 
 La secuencia viva de changes recomendados se mantiene en `docs/architecture/vertical-roadmap.md`. Si el orden cambia o se inserta un change habilitador nuevo, ese roadmap manda por encima de las recomendaciones históricas de este documento.

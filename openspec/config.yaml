@@ -9,7 +9,7 @@ context: |
   Style: `.venv/bin/python -m ruff check .`, `.venv/bin/python -m mypy src`, `.venv/bin/python -m pytest`.
 
 testing:
-  detected_at: 2026-04-15
+  detected_at: 2026-04-16
   runner: pytest
   test_command: .venv/bin/python -m pytest
   framework: pytest

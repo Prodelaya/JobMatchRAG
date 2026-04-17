@@ -40,6 +40,8 @@ La política activa de fuente-search queda así:
 - frescura >15 días excluye solo cuando la fecha es confiable;
 - los casos ambiguos sobreviven para scoring/explicación, pero las exclusiones explícitas NO llegan a LLM.
 
+Los hints del proveedor (`q`, `experienceMin`, `teleworking`, `sinceDate`, `category`/`subcategory`) pueden ayudar al discovery, pero NO reemplazan estos gates: la autoridad de elegibilidad sigue en los filtros canónicos internos.
+
 ### 3.2 Significado de los filtros duros
 
 Los filtros duros existen para evitar dos errores clásicos:

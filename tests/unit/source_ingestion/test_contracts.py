@@ -3,13 +3,21 @@ from __future__ import annotations
 from datetime import datetime
 
 from jobmatchrag.source_ingestion.contracts import (
+    CanonicalFamilyIntent,
     CanonicalFilterOutcome,
+    CanonicalLanguage,
+    LanguageVariant,
+    MappingDegradation,
+    OriginSideExclusion,
+    ParameterProjection,
     ErrorCategory,
     ErrorClassification,
     EvidenceRef,
     KnownOfferIndex,
     PaginationSupport,
+    ProjectionTrustLevel,
     ProviderExecutionPlan,
+    ProviderFamilyPlan,
     ProviderFilterMapping,
     RawCaptureOrigin,
     ReferenceDatasetSnapshot,
@@ -17,6 +25,7 @@ from jobmatchrag.source_ingestion.contracts import (
     RateLimitSupport,
     RawOfferHandoff,
     SourceCapabilities,
+    TechnologyReinforcement,
     TimeWindowSupport,
 )
 
@@ -82,6 +91,7 @@ def test_infojobs_adapter_seam_names_known_offer_lookup_and_raw_handoff_shape() 
             "run_id": "run-1",
             "checkpoint_in": "opaque-checkpoint",
             "list_request": {"page": 1, "maxResults": 50, "sinceDate": "_24_HOURS"},
+            "request_plan": {"family_key": "ai_automation", "language": "es", "query_label": "es-baseline"},
             "page_context": {"current_page": 1, "total_pages": 3},
         },
         "captures": {
@@ -97,6 +107,7 @@ def test_infojobs_adapter_seam_names_known_offer_lookup_and_raw_handoff_shape() 
     assert known_offer_index.is_new("infojobs", "offer-1") is True
     assert handoff["captures"][RawCaptureOrigin.LIST]["origin"] is RawCaptureOrigin.LIST
     assert handoff["captures"][RawCaptureOrigin.LIST]["payload"]["title"] == "Python Engineer"
+    assert handoff["trace"]["request_plan"]["query_label"] == "es-baseline"
 
 
 def test_canonical_filter_outcome_keeps_dataset_evidence_and_explicit_rationale() -> None:
@@ -153,3 +164,85 @@ def test_provider_execution_plan_separates_pushdown_from_post_fetch_filters() ->
         "seniority_semantic",
     )
     assert plan.degradation_notes == ("freshness remains advisory provider-side",)
+
+
+def test_canonical_family_intent_preserves_language_variants_and_reinforcement_metadata() -> None:
+    family = CanonicalFamilyIntent(
+        family_key="ai_automation",
+        intent_label="Internal automation with explicit AI/agent intent",
+        role_variants=("AI Automation Engineer", "Desarrollador Python de automatización/IA"),
+        language_variants=(
+            LanguageVariant(
+                language=CanonicalLanguage.ES,
+                baseline_terms=("automatización", "ia aplicada"),
+                rationale="Spanish baseline for local market recall",
+            ),
+            LanguageVariant(
+                language=CanonicalLanguage.MIXED,
+                baseline_terms=("ai automation engineer",),
+                mixed_with=(CanonicalLanguage.ES, CanonicalLanguage.EN),
+                rationale="Mixed probe is explicit and justified",
+            ),
+        ),
+        reinforcements=(
+            TechnologyReinforcement(
+                key="python",
+                terms=("python", "python3"),
+                mode="reinforcement",
+            ),
+        ),
+        target_filters=("geography_modality", "seniority_semantic"),
+    )
+
+    assert family.family_key == "ai_automation"
+    assert family.language_variants[0].language is CanonicalLanguage.ES
+    assert family.language_variants[1].language is CanonicalLanguage.MIXED
+    assert family.language_variants[1].mixed_with == (CanonicalLanguage.ES, CanonicalLanguage.EN)
+    assert family.reinforcements[0].key == "python"
+    assert family.reinforcements[0].optional is True
+    assert family.target_filters == ("geography_modality", "seniority_semantic")
+
+
+def test_provider_family_plan_keeps_projection_trust_without_making_params_authoritative() -> None:
+    family_plan = ProviderFamilyPlan(
+        family_key="ai_automation",
+        language=CanonicalLanguage.ES,
+        query_label="es-baseline",
+        q_terms=("automatización", "ia aplicada"),
+        reinforcement_terms=("python",),
+        provider_params={"q": "automatización ia aplicada python", "experienceMin": "1"},
+        parameter_projections=(
+            ParameterProjection(
+                canonical_source="family",
+                provider_param="q",
+                value="automatización ia aplicada python",
+                trust_level=ProjectionTrustLevel.PRIMARY,
+                rationale="Discovery starts from canonical role-intent terms",
+            ),
+            ParameterProjection(
+                canonical_source="seniority_semantic",
+                provider_param="experienceMin",
+                value="1",
+                trust_level=ProjectionTrustLevel.PARTIAL_STRONG,
+                rationale="Strong hint only; semantic seniority still stays post-fetch",
+            ),
+        ),
+        origin_exclusions=(
+            OriginSideExclusion(token="odoo", reason="Noise reduction for AI family"),
+        ),
+        degradations=(
+            MappingDegradation(
+                semantic_key="seniority_semantic",
+                reason_code="provider_partial_signal",
+                kept_post_fetch_as="seniority_semantic",
+            ),
+        ),
+        pending_post_fetch_checks=("seniority_semantic", "teleworking_semantic"),
+    )
+
+    assert family_plan.parameter_projections[0].authority == "canonical"
+    assert family_plan.parameter_projections[0].trust_level is ProjectionTrustLevel.PRIMARY
+    assert family_plan.parameter_projections[1].trust_level is ProjectionTrustLevel.PARTIAL_STRONG
+    assert family_plan.origin_exclusions[0].aggressiveness == "light"
+    assert family_plan.degradations[0].kept_post_fetch_as == "seniority_semantic"
+    assert family_plan.pending_post_fetch_checks == ("seniority_semantic", "teleworking_semantic")

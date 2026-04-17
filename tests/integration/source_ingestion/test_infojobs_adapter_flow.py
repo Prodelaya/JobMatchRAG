@@ -73,8 +73,8 @@ def test_job_run_handoff_keeps_list_detail_provenance_for_infojobs() -> None:
         ),
     )
 
-    assert result.run.status is RunStatus.COMPLETED
-    assert result.run.outcome_reason == "source exhausted"
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "fetch guardrail exhausted"
     assert result.run.checkpoint_in == '{"adapter": "infojobs", "offer_index": 0, "page": 1, "version": 1}'
     assert result.run.counters.raw_items_forwarded == 2
     assert len(result.raw_handoff) == 2
@@ -179,3 +179,118 @@ def test_infojobs_flow_skips_detail_for_known_offer_and_records_rate_limit_obser
         "status": "deferred",
         "reason": "rate_limited",
     }
+
+
+def test_infojobs_flow_keeps_canonical_authority_and_effective_request_trace() -> None:
+    transport = RecordingTransport(
+        responses=[
+            {
+                "items": [
+                    {"id": "offer-known", "title": "Automation Builder"},
+                ],
+                "currentPage": 1,
+                "totalPages": 1,
+            },
+        ]
+    )
+    client = InfoJobsClient(
+        config=InfoJobsClientConfig(client_id="client", client_secret="secret"),
+        transport=transport,
+    )
+    result = IngestionOrchestrator(guardrails=IngestionGuardrails(max_fetch_calls=1, max_items=10)).execute_job(
+        IngestionJob(
+            job_id="job-infojobs-4",
+            source_key="infojobs",
+            filter_intent=FilterIntent(
+                provider_filters={
+                    "experienceMin": "1",
+                    "sinceDate": "_24_HOURS",
+                    "teleworking": "remote",
+                    "category": "informatica-telecomunicaciones",
+                }
+            ),
+            max_fetch_calls=1,
+            max_items=10,
+        ),
+        InfoJobsAdapter(
+            client=client,
+            known_offer_index=TrackingKnownOfferIndex(new_offer_ids=set()),
+        ),
+    )
+
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "fetch guardrail exhausted"
+    assert result.run.canonical_trace is not None
+    assert result.run.canonical_trace.canonical_handoff is not None
+    assert result.run.canonical_trace.execution_plan.family_plans[0].parameter_projections[0].authority == "canonical"
+    assert result.run.canonical_trace.execution_plan.family_plans[0].pending_post_fetch_checks == (
+        "seniority_semantic",
+        "geography_modality",
+    )
+    assert result.raw_handoff[0]["trace"]["list_request"] == {
+        "q": "Desarrollador Python de automatización/IA automatización ia aplicada herramientas internas python apis",
+        "experienceMin": "1",
+        "sinceDate": "_24_HOURS",
+        "teleworking": "remote",
+        "category": "informatica-telecomunicaciones",
+        "page": 1,
+        "maxResults": 50,
+    }
+    assert result.raw_handoff[0]["trace"]["request_plan"] == {
+        "family_key": "ai_automation",
+        "language": "es",
+        "query_label": "es-baseline",
+    }
+
+
+def test_infojobs_flow_executes_multiple_mapped_family_queries_before_guardrail_exhausts() -> None:
+    transport = RecordingTransport(
+        responses=[
+            {
+                "items": [
+                    {"id": "offer-es", "title": "Automation Builder"},
+                ],
+                "currentPage": 1,
+                "totalPages": 1,
+            },
+            {
+                "items": [
+                    {"id": "offer-en", "title": "AI Engineer"},
+                ],
+                "currentPage": 1,
+                "totalPages": 1,
+            },
+        ]
+    )
+    client = InfoJobsClient(
+        config=InfoJobsClientConfig(client_id="client", client_secret="secret"),
+        transport=transport,
+    )
+    result = IngestionOrchestrator(guardrails=IngestionGuardrails(max_fetch_calls=2, max_items=10)).execute_job(
+        IngestionJob(
+            job_id="job-infojobs-fanout",
+            source_key="infojobs",
+            filter_intent=FilterIntent(
+                provider_filters={
+                    "experienceMin": "1",
+                    "sinceDate": "_24_HOURS",
+                    "teleworking": "remote",
+                    "category": "informatica-telecomunicaciones",
+                }
+            ),
+            max_fetch_calls=2,
+            max_items=10,
+        ),
+        InfoJobsAdapter(
+            client=client,
+            known_offer_index=TrackingKnownOfferIndex(new_offer_ids=set()),
+        ),
+    )
+
+    list_requests = [request.params for request in transport.requests if request.endpoint == "GET /offer"]
+
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "fetch guardrail exhausted"
+    assert len(list_requests) == 2
+    assert list_requests[0]["q"] != list_requests[1]["q"]
+    assert [item["source_offer_id"] for item in result.raw_handoff] == ["offer-es", "offer-en"]

@@ -1,24 +1,20 @@
 from __future__ import annotations
 
+from jobmatchrag.source_ingestion.contracts import CanonicalLanguage
 from jobmatchrag.source_ingestion import build_capture_profile as exported_build_capture_profile
 from jobmatchrag.source_ingestion import load_curated_datasets as exported_load_curated_datasets
 from jobmatchrag.source_ingestion.data_loader import load_curated_datasets
 from jobmatchrag.source_ingestion.search_strategy import (
     build_capture_profile,
-    build_provider_execution_plan,
     evaluate_offer,
 )
 
 
 def test_capture_profile_exposes_three_canonical_families_and_provider_params_stay_non_authoritative() -> None:
     profile = build_capture_profile()
-    plan = build_provider_execution_plan(
-        profile=profile,
-        provider_filters={"q": "python ai", "sinceDate": "_15_DAYS", "contractType": "full_time"},
-        supported_filters=frozenset({"q", "sinceDate"}),
-    )
+    ai_family = next(family for family in profile.search_families if family.family_key == "ai_automation")
 
-    assert tuple(family.key for family in profile.search_families) == (
+    assert tuple(family.family_key for family in profile.search_families) == (
         "ai_automation",
         "automation",
         "adjacent_odoo",
@@ -29,20 +25,27 @@ def test_capture_profile_exposes_three_canonical_families_and_provider_params_st
         "seniority_semantic",
         "freshness_reliable",
     )
-    assert plan.derived_provider_params == {"q": "python ai", "sinceDate": "_15_DAYS"}
-    assert plan.pushed_down_filters == ("search_terms", "freshness_window")
-    assert [(mapping.canonical_filter_key, mapping.provider_param) for mapping in plan.provider_filter_mappings] == [
-        ("search_terms", "q"),
-        ("freshness_window", "sinceDate"),
-    ]
-    assert plan.post_fetch_filters == (
-        "geography_modality",
-        "consultancy_body_shopping",
-        "seniority_semantic",
-        "freshness_reliable",
+    assert tuple(variant.language for variant in ai_family.language_variants) == (
+        CanonicalLanguage.ES,
+        CanonicalLanguage.EN,
+        CanonicalLanguage.MIXED,
     )
-    assert plan.canonical_profile_ref == profile.profile_id
-    assert "execution details" in plan.degradation_notes[0]
+    assert ai_family.language_variants[2].mixed_with == (CanonicalLanguage.ES, CanonicalLanguage.EN)
+    assert ai_family.language_variants[2].rationale == "Cross-language tactical probe for mixed-market postings"
+    assert tuple(reinforcement.key for reinforcement in ai_family.reinforcements) == (
+        "python",
+        "apis",
+        "bots",
+        "llm_tooling",
+    )
+    assert tuple(reinforcement.mode for reinforcement in ai_family.reinforcements) == (
+        "reinforcement",
+        "reinforcement",
+        "tactical_probe",
+        "tactical_probe",
+    )
+    assert not hasattr(ai_family, "provider_params")
+    assert profile.profile_id == "source-search-strategy.v1"
 
 
 def test_hybrid_city_dataset_supports_seeded_city_alias_lookup() -> None:

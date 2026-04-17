@@ -6,27 +6,21 @@ import re
 from typing import Any
 
 from .contracts import (
+    CanonicalFamilyIntent,
     CanonicalFilterOutcome,
+    CanonicalLanguage,
+    CanonicalSearchHandoff,
     EvidenceRef,
+    LanguageVariant,
     ProviderExecutionPlan,
     ProviderFilterMapping,
     ReferenceDatasetSnapshot,
+    TechnologyReinforcement,
 )
 from .data_loader import CuratedDatasets
 
 
-@dataclass(frozen=True, slots=True)
-class SearchFamily:
-    key: str
-    terms: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class CaptureProfile:
-    profile_id: str
-    search_families: tuple[SearchFamily, ...]
-    target_filters: tuple[str, ...]
-    ambiguity_policy: str
+CaptureProfile = CanonicalSearchHandoff
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,9 +79,106 @@ def build_capture_profile() -> CaptureProfile:
     return CaptureProfile(
         profile_id="source-search-strategy.v1",
         search_families=(
-            SearchFamily("ai_automation", ("automation", "automatización", "ai", "llm", "agent")),
-            SearchFamily("automation", ("automation", "automatización", "integration", "workflow")),
-            SearchFamily("adjacent_odoo", ("odoo",)),
+            CanonicalFamilyIntent(
+                family_key="ai_automation",
+                intent_label="Internal automation with explicit AI/LLM/agent intent",
+                role_variants=(
+                    "AI Engineer",
+                    "AI Automation Engineer",
+                    "Desarrollador Python de automatización/IA",
+                ),
+                language_variants=(
+                    LanguageVariant(
+                        language=CanonicalLanguage.ES,
+                        baseline_terms=("automatización", "ia aplicada", "herramientas internas"),
+                        rationale="Spanish baseline for the local market",
+                    ),
+                    LanguageVariant(
+                        language=CanonicalLanguage.EN,
+                        baseline_terms=("automation", "applied ai", "internal tools"),
+                        rationale="English baseline for internationally posted roles",
+                    ),
+                    LanguageVariant(
+                        language=CanonicalLanguage.MIXED,
+                        baseline_terms=("ai automation engineer", "automatización"),
+                        mixed_with=(CanonicalLanguage.ES, CanonicalLanguage.EN),
+                        rationale="Cross-language tactical probe for mixed-market postings",
+                    ),
+                ),
+                reinforcements=(
+                    TechnologyReinforcement(key="python", terms=("python", "python3")),
+                    TechnologyReinforcement(key="apis", terms=("apis", "integraciones api")),
+                    TechnologyReinforcement(key="bots", terms=("bots", "chatbots"), mode="tactical_probe"),
+                    TechnologyReinforcement(
+                        key="llm_tooling",
+                        terms=("llm", "agents", "ai tooling"),
+                        mode="tactical_probe",
+                    ),
+                ),
+                target_filters=(
+                    "geography_modality",
+                    "consultancy_body_shopping",
+                    "seniority_semantic",
+                    "freshness_reliable",
+                ),
+            ),
+            CanonicalFamilyIntent(
+                family_key="automation",
+                intent_label="Internal automation without explicit AI semantics",
+                role_variants=(
+                    "Automation Builder",
+                    "Internal Tools Developer",
+                    "Automation Engineer",
+                ),
+                language_variants=(
+                    LanguageVariant(
+                        language=CanonicalLanguage.ES,
+                        baseline_terms=("automatización", "integraciones", "procesos internos"),
+                        rationale="Spanish baseline for non-AI automation roles",
+                    ),
+                    LanguageVariant(
+                        language=CanonicalLanguage.EN,
+                        baseline_terms=("automation", "workflow", "internal tools"),
+                        rationale="English baseline for non-AI automation roles",
+                    ),
+                ),
+                reinforcements=(
+                    TechnologyReinforcement(key="python", terms=("python",)),
+                    TechnologyReinforcement(key="apis", terms=("api", "rest")),
+                ),
+                target_filters=(
+                    "geography_modality",
+                    "consultancy_body_shopping",
+                    "seniority_semantic",
+                    "freshness_reliable",
+                ),
+            ),
+            CanonicalFamilyIntent(
+                family_key="adjacent_odoo",
+                intent_label="Adjacent Odoo opportunities kept separate from core automation",
+                role_variants=("Odoo Developer", "Odoo Technical Consultant"),
+                language_variants=(
+                    LanguageVariant(
+                        language=CanonicalLanguage.ES,
+                        baseline_terms=("odoo", "erp"),
+                        rationale="Spanish adjacent baseline",
+                    ),
+                    LanguageVariant(
+                        language=CanonicalLanguage.EN,
+                        baseline_terms=("odoo", "erp"),
+                        rationale="English adjacent baseline",
+                    ),
+                ),
+                reinforcements=(
+                    TechnologyReinforcement(key="python", terms=("python",)),
+                ),
+                target_filters=(
+                    "geography_modality",
+                    "consultancy_body_shopping",
+                    "seniority_semantic",
+                    "freshness_reliable",
+                ),
+            ),
         ),
         target_filters=(
             "geography_modality",
@@ -474,7 +565,6 @@ def _dedupe_preserving_order(values: Any) -> tuple[str, ...]:
 __all__ = [
     "CaptureProfile",
     "OfferEvaluation",
-    "SearchFamily",
     "build_capture_profile",
     "build_provider_execution_plan",
     "evaluate_offer",

@@ -28,7 +28,7 @@ El pipeline del dominio sigue esta secuencia:
 
 ### 3.1 `source`
 
-Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job -> run`. Ese run tiene contexto, timestamps, estado, counters, checkpoints, snapshot de capabilities/filter intent, errores clasificados y una traza canónica separada del request derivado al proveedor.
+Una fuente se ejecuta bajo un `RunRecord` gobernado por el framework común `job -> run`. Ese run tiene contexto, timestamps, estado, counters, checkpoints, snapshot de capabilities/filter intent, errores clasificados y una traza canónica separada del request derivado al proveedor. Esa traza guarda además cada query emitida con su identidad de plan canónico (`family_key`, idioma, `query_label`), el request efectivo, los `source_offer_id` vistos/forwardeados y las deduplicaciones por run.
 
 ### 3.2 `raw`
 

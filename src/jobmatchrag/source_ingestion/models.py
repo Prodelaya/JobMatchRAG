@@ -8,8 +8,10 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from .contracts import (
+    CanonicalSearchHandoff,
     CanonicalFilterOutcome,
     ErrorClassification,
+    ProviderRequestPlanIdentity,
     ProviderExecutionPlan,
     RateLimitObservation,
     ReferenceDatasetSnapshot,
@@ -112,11 +114,36 @@ class CanonicalOfferSnapshot:
     outcomes: tuple[CanonicalFilterOutcome, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class ProviderQueryExecutionTrace:
+    requested_filters: Mapping[str, Any]
+    checkpoint_in: str | None
+    checkpoint_out: str | None
+    raw_offer_ids: tuple[str, ...] = ()
+    forwarded_offer_ids: tuple[str, ...] = ()
+    deduplicated_offer_ids: tuple[str, ...] = ()
+    request_plan: ProviderRequestPlanIdentity | None = None
+    exhausted: bool = True
+    rate_limit_observations: tuple[RateLimitObservation, ...] = ()
+    error_summary: ErrorClassification | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "requested_filters",
+            MappingProxyType(
+                {key: _freeze_filter_value(value) for key, value in dict(self.requested_filters).items()}
+            ),
+        )
+
+
 @dataclass(slots=True)
 class CanonicalRunTrace:
     capture_profile_ref: str
     execution_plan: ProviderExecutionPlan
+    canonical_handoff: CanonicalSearchHandoff | None = None
     dataset_snapshots: tuple[ReferenceDatasetSnapshot, ...] = ()
+    query_executions: list[ProviderQueryExecutionTrace] = field(default_factory=list)
     offer_outcomes: list[CanonicalOfferSnapshot] = field(default_factory=list)
 
 

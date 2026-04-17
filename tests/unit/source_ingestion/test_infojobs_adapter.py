@@ -255,6 +255,46 @@ def test_adapter_fetches_detail_only_for_new_offers_and_advances_to_next_page() 
     assert [request.endpoint for request in transport.requests] == ["GET /offer", "GET /offer/{offerId}"]
 
 
+def test_adapter_listing_request_uses_only_projected_provider_params() -> None:
+    transport = RecordingTransport(
+        responses=[
+            {
+                "items": [
+                    {"id": "offer-known", "title": "Known Role"},
+                ],
+                "currentPage": 1,
+                "totalPages": 1,
+            },
+        ]
+    )
+    adapter = InfoJobsAdapter(
+        client=InfoJobsClient(
+            config=InfoJobsClientConfig(client_id="client", client_secret="secret"),
+            transport=transport,
+        ),
+        known_offer_index=TrackingKnownOfferIndex(new_offer_ids=set()),
+    )
+
+    outcome = adapter.fetch(
+        build_context(
+            requested_filters={
+                "q": "automation builder python",
+                "category": "informatica-telecomunicaciones",
+                "family_key": "automation",
+                "query_label": "es-baseline",
+                "authority": "canonical",
+            }
+        )
+    )
+
+    assert outcome.raw_items[0]["trace"]["list_request"] == {
+        "q": "automation builder python",
+        "category": "informatica-telecomunicaciones",
+        "page": 1,
+        "maxResults": 50,
+    }
+
+
 def test_adapter_rejects_page_size_above_documented_operational_ceiling() -> None:
     with pytest.raises(ValueError, match="page_size must be <= 50"):
         InfoJobsAdapter(

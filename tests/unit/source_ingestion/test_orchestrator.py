@@ -11,6 +11,7 @@ from jobmatchrag.source_ingestion.contracts import (
     FetchContext,
     FetchOutcome,
     PaginationSupport,
+    ProjectionTrustLevel,
     RateLimitObservation,
     RateLimitSupport,
     SourceCapabilities,
@@ -72,6 +73,20 @@ class MutatingAdapter(FakeAdapter):
 class BrokenClassifierAdapter(FakeAdapter):
     def classify_error(self, error: Exception) -> ErrorClassification:
         raise RuntimeError("classifier exploded")
+
+
+class InfoJobsLikeAdapter(FakeAdapter):
+    source_key = "infojobs"
+
+    def __init__(self, responses: Sequence[FetchOutcome | Exception]) -> None:
+        super().__init__(responses)
+        self.capabilities = SourceCapabilities(
+            pagination=PaginationSupport.PAGE_NUMBER,
+            time_windows=TimeWindowSupport.NONE,
+            supported_filters=frozenset({"q", "experienceMin", "sinceDate", "teleworking", "category"}),
+            checkpoint_support=True,
+            rate_limit_support=RateLimitSupport.EXPLICIT,
+        )
 
 
 def build_job(**overrides: object) -> IngestionJob:
@@ -398,6 +413,154 @@ def test_classification_failure_falls_back_to_structured_terminal_error() -> Non
         "classification_error_type": "RuntimeError",
         "classification_error_message": "classifier exploded",
     }
+
+
+def test_infojobs_orchestration_persists_canonical_handoff_and_projection_trace() -> None:
+    adapter = InfoJobsLikeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=(
+                    {
+                        "source_offer_id": "offer-1",
+                        "title": "Automation Builder",
+                        "modality": "remote",
+                        "country": "Spain",
+                    },
+                ),
+                next_checkpoint="cp-1",
+                exhausted=True,
+            )
+        ]
+    )
+    job = IngestionJob(
+        job_id="job-infojobs-trace",
+        source_key="infojobs",
+        filter_intent=FilterIntent(
+            provider_filters={
+                "experienceMin": "1",
+                "sinceDate": "_24_HOURS",
+                "teleworking": "remote",
+                "category": "informatica-telecomunicaciones",
+            }
+        ),
+        max_fetch_calls=1,
+    )
+
+    result = IngestionOrchestrator().execute_job(job, adapter)
+
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "fetch guardrail exhausted"
+    assert result.run.canonical_trace is not None
+    assert result.run.canonical_trace.canonical_handoff is not None
+    assert tuple(family.family_key for family in result.run.canonical_trace.canonical_handoff.search_families) == (
+        "ai_automation",
+        "automation",
+        "adjacent_odoo",
+    )
+    assert result.run.canonical_trace.execution_plan.family_plans[0].parameter_projections[0].authority == "canonical"
+    assert result.run.canonical_trace.execution_plan.family_plans[0].parameter_projections[1].trust_level is ProjectionTrustLevel.PARTIAL_STRONG
+    assert result.run.canonical_trace.execution_plan.post_fetch_filters == (
+        "geography_modality",
+        "consultancy_body_shopping",
+        "seniority_semantic",
+        "freshness_reliable",
+    )
+    assert result.run.canonical_trace.execution_plan.provider_filter_mappings[0].canonical_filter_key == "family"
+    assert result.run.canonical_trace.query_executions[0].request_plan is not None
+    assert result.run.canonical_trace.query_executions[0].request_plan.family_key == "ai_automation"
+    assert result.run.canonical_trace.query_executions[0].forwarded_offer_ids == ("offer-1",)
+    assert adapter.contexts[0].requested_filters == result.run.canonical_trace.execution_plan.family_plans[0].provider_params
+
+
+def test_infojobs_orchestration_fans_out_across_multiple_family_plans_before_guardrail_exhausts() -> None:
+    adapter = InfoJobsLikeAdapter(
+        responses=[
+            FetchOutcome(
+                raw_items=({"id": "offer-es"},),
+                next_checkpoint=None,
+                exhausted=True,
+            ),
+            FetchOutcome(
+                raw_items=({"id": "offer-en"},),
+                next_checkpoint=None,
+                exhausted=True,
+            ),
+        ]
+    )
+    job = IngestionJob(
+        job_id="job-infojobs-fanout",
+        source_key="infojobs",
+        filter_intent=FilterIntent(
+            provider_filters={
+                "experienceMin": "1",
+                "sinceDate": "_24_HOURS",
+                "teleworking": "remote",
+                "category": "informatica-telecomunicaciones",
+            }
+        ),
+        max_fetch_calls=2,
+    )
+
+    result = IngestionOrchestrator().execute_job(job, adapter)
+
+    family_plans = result.run.canonical_trace.execution_plan.family_plans
+    assert len(family_plans) > 2
+    assert result.run.status is RunStatus.PARTIAL
+    assert result.run.outcome_reason == "fetch guardrail exhausted"
+    assert [context.requested_filters for context in adapter.contexts] == [
+        family_plans[0].provider_params,
+        family_plans[1].provider_params,
+    ]
+    assert adapter.contexts[0].requested_filters["q"] != adapter.contexts[1].requested_filters["q"]
+    assert [item["id"] for item in result.raw_handoff] == ["offer-es", "offer-en"]
+    assert [trace.request_plan.query_label for trace in result.run.canonical_trace.query_executions] == [
+        "es-baseline",
+        "en-baseline",
+    ]
+
+
+def test_infojobs_fanout_deduplicates_forwarded_offers_but_keeps_per_query_trace() -> None:
+    adapter = InfoJobsLikeAdapter(
+        responses=[
+            FetchOutcome(raw_items=({"id": "offer-1"},), next_checkpoint=None, exhausted=True),
+            FetchOutcome(raw_items=({"id": "offer-1"},), next_checkpoint=None, exhausted=True),
+        ]
+    )
+    job = IngestionJob(
+        job_id="job-infojobs-dedup",
+        source_key="infojobs",
+        max_fetch_calls=2,
+    )
+
+    result = IngestionOrchestrator().execute_job(job, adapter)
+
+    assert result.run.counters.raw_items_seen == 2
+    assert result.run.counters.raw_items_forwarded == 1
+    assert [item["id"] for item in result.raw_handoff] == ["offer-1"]
+    assert [trace.raw_offer_ids for trace in result.run.canonical_trace.query_executions] == [
+        ("offer-1",),
+        ("offer-1",),
+    ]
+    assert result.run.canonical_trace.query_executions[1].forwarded_offer_ids == ()
+    assert result.run.canonical_trace.query_executions[1].deduplicated_offer_ids == ("offer-1",)
+
+
+def test_invalid_wrapped_execution_plan_checkpoint_uses_structured_failure() -> None:
+    adapter = InfoJobsLikeAdapter(responses=[])
+    job = IngestionJob(
+        job_id="job-infojobs-invalid-checkpoint",
+        source_key="infojobs",
+        checkpoint_in='{"adapter_checkpoint": null, "family_plan_index": "bad", "orchestrator": "source_ingestion.execution_plan"}',
+    )
+
+    result = IngestionOrchestrator().execute_job(job, adapter)
+
+    assert result.run.status is RunStatus.FAILED
+    assert result.run.outcome_reason == "terminal adapter error"
+    assert result.run.error_summary is not None
+    assert result.run.error_summary.category is ErrorCategory.CONFIGURATION
+    assert result.run.error_summary.details["provider"] == "infojobs"
+    assert result.run.error_summary.details["failure_kind"] == "checkpoint"
 
 
 def test_execute_job_fails_fast_when_job_source_key_does_not_match_adapter() -> None:

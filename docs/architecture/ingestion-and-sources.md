@@ -59,6 +59,7 @@ La ingesta puede reducir ruido temprano, pero NO decide la elegibilidad final de
 - handoff raw trazable hacia la futura persistencia de `RawOfferSnapshot`.
 - `capture profile` canónica agnóstica a proveedor con familias bilingües, filtros objetivo y reglas de degradación.
 - split auditable entre pushdown soportado por proveedor y filtros post-fetch internos.
+- capa explícita de mapping por proveedor donde la semántica sigue siendo canónica y los params del portal son solo artefactos de ejecución.
 
 Quedan fuera de este framework:
 
@@ -95,10 +96,12 @@ SourceAdapter
 
 - `GET /offer` es la vía primaria de discovery;
 - `GET /offer/{offerId}` se usa solo para enriquecer ofertas nuevas para el sistema;
+- antes del adapter existe un mapper explícito `capture profile` canónica -> `InfoJobsExecutionPlan`; discovery serializa únicamente los `provider_params` aprobados por ese plan y nunca reconstruye semántica desde el request final;
 - `sinceDate` y demás filtros del lado de la fuente son optimizaciones declaradas por `capabilities`, no autoridad canónica de continuidad o elegibilidad; en el InfoJobs actual eso vive como params derivados desde la `capture profile`, no en una traducción automática de `requested_window_start/end`;
 - el checkpoint que vuelve del adapter representa continuación interna de página/oferta y puede convivir con el `checkpoint_in` opaco del framework sin reinterpretarlo, pero en InfoJobs la garantía real es solo best-effort porque el proveedor no documenta orden estable entre llamadas; el payload debe incluir marcador de adapter/versión para rechazar checkpoints ajenos o incompatibles de forma explícita;
 - el handoff raw preserva capturas hermanas `list` y `detail` cuando existe detalle, y si el detalle de una oferta nueva queda bloqueado por presupuesto/rate limit igual preserva el raw `list` con una marca explícita de `detail` diferido.
 - reglas semánticas como modalidad/geografía AVE-friendly o detección de consultoría/body-shopping permanecen post-fetch dentro de JobMatchRAG aunque InfoJobs provea filtros parciales.
+- cada proyección a InfoJobs queda auditada con `authority=canonical`, `trust_level` y `rationale`; `experienceMin` es partial-but-strong, `category/subcategory` son contextuales, `teleworking` es support-only y `sinceDate` es optimization-only.
 
 ## 6. Modelo de trazabilidad de `job` y `run`
 
@@ -124,7 +127,7 @@ Debe capturar como mínimo:
 - `source_key`;
 - snapshot de capabilities del adapter usado;
 - snapshot del filter intent;
-- traza canónica con `capture profile`, params derivados, identidades canónicas de filtros pusheados, mapping explícito semántica→param de proveedor, filtros post-fetch y versiones de datasets curados consultados;
+- traza canónica con `capture profile`, plan de ejecución por proveedor (`family_plans`, proyecciones, degradaciones, checks pendientes), params derivados, identidades canónicas de filtros pusheados, mapping explícito semántica→param de proveedor, request efectivo por query con identidad de plan (`family_key` / idioma / `query_label`), deduplicación por `source_offer_id` a nivel run y versiones de datasets curados consultados;
 - timestamps de inicio/fin;
 - counters de fetch/items;
 - `checkpoint_in` / `checkpoint_out`;
@@ -152,6 +155,7 @@ Un run debe permitir responder, como mínimo:
 - qué parte del criterio canónico se intentó empujar al proveedor y qué parte quedó post-fetch;
 - qué datasets curados participaron (por ejemplo ciudades híbridas AVE-friendly y lista provisional de consultoras conocidas) y con qué versión;
 - qué checkpoints entraron/salieron;
+- qué queries concretas se emitieron aunque no hayan forwardeado ofertas (por ejemplo query vacía, totalmente excluida o deduplicada downstream);
 - qué errores ocurrieron;
 - si hubo retry, cierre parcial o corte terminal.
 
